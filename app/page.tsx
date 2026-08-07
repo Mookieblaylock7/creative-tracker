@@ -208,36 +208,53 @@ export default function Home() {
       }
 
       if (savedProjects) {
-        setUpdates(
-          savedProjects
-            .filter((p) => {
-              if (!p.sort_key || p.sort_key.startsWith('9999')) return true;
-              return p.sort_key >= todayISO;
-            })
-            .map((p) => {
-              let parsedGenres: string[] = [];
-              if (Array.isArray(p.genres)) parsedGenres = p.genres;
-              else if (p.genre_ids && Array.isArray(p.genre_ids)) {
-                parsedGenres = p.genre_ids.map((gid: number) => GENRE_MAP[gid]).filter(Boolean);
-              }
+        const loaded = savedProjects
+          .filter((p) => {
+            if (!p.sort_key || p.sort_key.startsWith('9999')) return true;
+            return p.sort_key >= todayISO;
+          })
+          .map((p) => {
+            let parsedGenres: string[] = [];
+            if (Array.isArray(p.genres)) parsedGenres = p.genres;
+            else if (p.genre_ids && Array.isArray(p.genre_ids)) {
+              parsedGenres = p.genre_ids.map((gid: number) => GENRE_MAP[gid]).filter(Boolean);
+            }
 
-              return {
-                id: p.id,
-                tmdbId: p.tmdb_id,
-                creativeName: p.creative_name,
-                projectTitle: p.project_title,
-                role: p.role,
-                mediaType: p.media_type,
-                releaseDateHeader: p.release_date_header,
-                sortKey: p.sort_key,
-                status: p.status,
-                director: p.director,
-                isDoc: isDocumentaryProject(p.project_title, p.role),
-                topCast: p.top_cast || [],
-                genres: parsedGenres,
-              };
-            })
-        );
+            return {
+              id: p.id,
+              tmdbId: p.tmdb_id,
+              creativeName: p.creative_name,
+              projectTitle: p.project_title,
+              role: p.role,
+              mediaType: p.media_type,
+              releaseDateHeader: p.release_date_header,
+              sortKey: p.sort_key,
+              status: p.status,
+              director: p.director,
+              isDoc: isDocumentaryProject(p.project_title, p.role),
+              topCast: p.top_cast || [],
+              genres: parsedGenres,
+            };
+          });
+
+        setUpdates(loaded);
+
+        // Auto-fetch top cast for loaded items missing cast info
+        const uniqueTmdbIds = Array.from(new Set(loaded.map((l) => l.tmdbId)));
+        for (const tid of uniqueTmdbIds.slice(0, 15)) {
+          const sample = loaded.find((l) => l.tmdbId === tid);
+          if (sample && (!sample.topCast || sample.topCast.length === 0)) {
+            try {
+              const res = await fetch(`/api/details?id=${tid}&type=${sample.mediaType}`);
+              const details = await res.json();
+              if (details.topCast && details.topCast.length > 0) {
+                setUpdates((prev) =>
+                  prev.map((item) => (item.tmdbId === tid ? { ...item, topCast: details.topCast } : item))
+                );
+              }
+            } catch (e) {}
+          }
+        }
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -372,7 +389,7 @@ export default function Home() {
         await supabase.from('tracked_projects').upsert(dbRows);
       }
 
-      // Asynchronously fetch top cast for these new projects
+      // Fetch top cast for newly followed person's projects
       for (const proj of newProjects) {
         try {
           const dRes = await fetch(`/api/details?id=${proj.tmdbId}&type=${proj.mediaType}`);
@@ -380,9 +397,7 @@ export default function Home() {
 
           if (details.topCast && details.topCast.length > 0) {
             setUpdates((prev) =>
-              prev.map((item) =>
-                item.tmdbId === proj.tmdbId ? { ...item, topCast: details.topCast } : item
-              )
+              prev.map((item) => (item.tmdbId === proj.tmdbId ? { ...item, topCast: details.topCast } : item))
             );
           }
         } catch (e) {}
@@ -689,16 +704,36 @@ export default function Home() {
     );
   }
 
-  const personProjects = selectedPersonModal
+  // Deduplicated Person Projects Modal Grouping
+  const personRawProjects = selectedPersonModal
     ? updates.filter((u) => u.creativeName.toLowerCase() === selectedPersonModal.name.toLowerCase())
     : [];
+
+  const personGroupedMap = new Map<number, { title: string; mediaType: string; status: string; releaseHeader: string; roles: string[] }>();
+  personRawProjects.forEach((p) => {
+    if (!personGroupedMap.has(p.tmdbId)) {
+      personGroupedMap.set(p.tmdbId, {
+        title: p.projectTitle,
+        mediaType: p.mediaType,
+        status: p.status,
+        releaseHeader: p.releaseDateHeader,
+        roles: [],
+      });
+    }
+    const item = personGroupedMap.get(p.tmdbId)!;
+    if (!item.roles.includes(p.role)) {
+      item.roles.push(p.role);
+    }
+  });
+
+  const personProjects = Array.from(personGroupedMap.values());
 
   return (
     <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.3</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.4</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -1028,25 +1063,25 @@ export default function Home() {
                   No logged projects found for {selectedPersonModal.name}.
                 </div>
               ) : (
-                personProjects.map((proj) => (
-                  <div key={proj.id} className="pt-2 leading-tight flex justify-between items-start">
+                personProjects.map((proj, idx) => (
+                  <div key={idx} className="pt-2 leading-tight flex justify-between items-start">
                     <div>
                       <div className="font-bold text-white text-xs">
                         <a
-                          href={`https://www.themoviedb.org/${proj.mediaType}/${proj.tmdbId}`}
+                          href={`https://www.themoviedb.org/${proj.mediaType}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-[#a5d6ff] hover:underline"
                         >
-                          {proj.projectTitle}
+                          {proj.title}
                         </a>
                       </div>
                       <div className="text-[11px] text-[#8b949e] mt-1 space-x-2">
-                        <span className="text-[#58a6ff] font-semibold">{proj.role}</span>
+                        <span className="text-[#58a6ff] font-semibold">{proj.roles.join(', ')}</span>
                         <span>·</span>
                         <span className="text-amber-400">{proj.status}</span>
                         <span>·</span>
-                        <span>{proj.releaseDateHeader}</span>
+                        <span>{proj.releaseHeader}</span>
                       </div>
                     </div>
                   </div>
