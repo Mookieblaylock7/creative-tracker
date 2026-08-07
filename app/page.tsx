@@ -260,10 +260,6 @@ export default function Home() {
         const title = c.title || c.name || 'Untitled Project';
         
         let assignedRole = c.job || (c.character ? `Cast (${c.character})` : department);
-        
-        // Force primary department if person was imported as a director/writer
-        if (department === 'Directing') assignedRole = 'Director';
-        else if (department === 'Writing') assignedRole = 'Writer';
 
         const isDoc = isDocumentaryProject(title, assignedRole, c.genre_ids);
 
@@ -424,6 +420,10 @@ export default function Home() {
 
     if (!includeDocs && item.isDoc) return false;
 
+    if (roleFilter === 'Directing' && !item.role.toLowerCase().includes('director') && !item.role.toLowerCase().includes('directing')) return false;
+    if (roleFilter === 'Writing' && !item.role.toLowerCase().includes('writer') && !item.role.toLowerCase().includes('writing')) return false;
+    if (roleFilter === 'Acting' && !item.role.toLowerCase().includes('cast') && !item.role.toLowerCase().includes('actor')) return false;
+
     return true;
   });
 
@@ -456,33 +456,33 @@ export default function Home() {
 
   const sortedGroupedUpdates = Array.from(groupedMap.values()).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
+  // Dynamic Credit Formatter
   const formatCreditsLine = (creatives: Array<{ name: string; role: string }>) => {
-    const directors: string[] = [];
-    const writers: string[] = [];
-    const cast: string[] = [];
+    // Map roles grouped by creative name
+    const creativeRoleMap = new Map<string, string[]>();
 
     creatives.forEach((c) => {
-      // Cross-check against user's followed list department to resolve ambiguity
-      const followedPerson = followed.find((f) => f.name.toLowerCase() === c.name.toLowerCase());
-      const department = followedPerson?.department || '';
+      let roleClean = c.role;
+      if (roleClean.toLowerCase() === 'director') roleClean = 'Dir.';
+      else if (roleClean.toLowerCase() === 'directing') roleClean = 'Dir.';
+      else if (roleClean.toLowerCase().startsWith('cast')) roleClean = 'Starring';
 
-      const roleLower = c.role.toLowerCase();
-
-      if (department === 'Directing' || roleLower.includes('director') || roleLower.includes('directing')) {
-        if (!directors.includes(c.name)) directors.push(c.name);
-      } else if (department === 'Writing' || roleLower.includes('writer') || roleLower.includes('writing') || roleLower.includes('screenplay')) {
-        if (!writers.includes(c.name)) writers.push(c.name);
-      } else {
-        if (!cast.includes(c.name)) cast.push(c.name);
+      if (!creativeRoleMap.has(c.name)) {
+        creativeRoleMap.set(c.name, []);
+      }
+      const existing = creativeRoleMap.get(c.name)!;
+      if (!existing.includes(roleClean)) {
+        existing.push(roleClean);
       }
     });
 
-    const parts: string[] = [];
-    if (directors.length > 0) parts.push(`Dir. ${directors.join(', ')}`);
-    if (writers.length > 0) parts.push(`Writer ${writers.join(', ')}`);
-    if (cast.length > 0) parts.push(`Starring ${cast.join(', ')}`);
+    const entries: string[] = [];
+    creativeRoleMap.forEach((roles, name) => {
+      const roleStr = roles.join(', ');
+      entries.push(`${roleStr} ${name}`);
+    });
 
-    return parts.join(' · ');
+    return entries.join(' · ');
   };
 
   if (!session) {
@@ -544,7 +544,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.8</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.9</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
