@@ -335,10 +335,8 @@ export default function Home() {
           return rating >= importRatingThreshold;
         });
 
-        setImportProgress(`Found ${filtered.length} matching films. Processing creators...`);
+        setImportProgress(`Found ${filtered.length} matching films. Processing...`);
         const newlyAddedIds: number[] = [];
-
-        const tmdbApiKey = process.env.NEXT_PUBLIC_TMDB_KEY || 'c9d1a3848b7a2d8e6a3c6d7a';
 
         for (let i = 0; i < filtered.length; i++) {
           const movie = filtered[i];
@@ -350,45 +348,17 @@ export default function Home() {
           setImportProgress(`Processing (${i + 1}/${filtered.length}): ${title}...`);
 
           try {
-            // Direct TMDB Movie Search (strictly searches movies, not people)
-            let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(title)}&include_adult=false`;
-            if (year) searchUrl += `&year=${year}`;
+            const res = await fetch(`/api/movie?title=${encodeURIComponent(title)}&year=${year || ''}`);
+            const data = await res.json();
 
-            const searchRes = await fetch(searchUrl);
-            const searchData = await searchRes.json();
-
-            if (searchData.results && searchData.results.length > 0) {
-              const movieMatch = searchData.results[0];
-
-              // Skip documentaries if selected
-              if (importSkipDocs && movieMatch.genre_ids && movieMatch.genre_ids.includes(99)) {
-                continue;
-              }
-
-              // Fetch real credits for this movie
-              const creditsRes = await fetch(`https://api.themoviedb.org/3/movie/${movieMatch.id}/credits?api_key=${tmdbApiKey}`);
-              if (!creditsRes.ok) continue;
-
-              const creditsData = await creditsRes.json();
-              const crew = creditsData.crew || [];
-              const cast = creditsData.cast || [];
+            if (data && !data.error) {
+              if (importSkipDocs && data.isDoc) continue;
 
               const creatorsToFollow: any[] = [];
 
-              if (importDirectors) {
-                const dirs = crew.filter((c: any) => c.job === 'Director').map((c: any) => ({ id: c.id, name: c.name, department: 'Directing' }));
-                creatorsToFollow.push(...dirs);
-              }
-
-              if (importWriters) {
-                const writers = crew.filter((c: any) => c.department === 'Writing' || c.job === 'Screenplay' || c.job === 'Writer').map((c: any) => ({ id: c.id, name: c.name, department: 'Writing' }));
-                creatorsToFollow.push(...writers);
-              }
-
-              if (importCast) {
-                const topCast = cast.slice(0, 3).map((c: any) => ({ id: c.id, name: c.name, department: 'Acting' }));
-                creatorsToFollow.push(...topCast);
-              }
+              if (importDirectors && data.directors) creatorsToFollow.push(...data.directors);
+              if (importWriters && data.writers) creatorsToFollow.push(...data.writers);
+              if (importCast && data.topCast) creatorsToFollow.push(...data.topCast);
 
               for (const creator of creatorsToFollow) {
                 newlyAddedIds.push(creator.id);
@@ -399,7 +369,7 @@ export default function Home() {
             console.error(`Failed to process ${title}:`, err);
           }
 
-          await new Promise((resolve) => setTimeout(resolve, 150));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
 
         setLastImportBatchIds(newlyAddedIds);
@@ -492,7 +462,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.2</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.3</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
