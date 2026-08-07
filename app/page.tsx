@@ -127,6 +127,32 @@ export default function Home() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Fetch top cast on the fly for visible projects missing cast data
+  useEffect(() => {
+    if (updates.length === 0) return;
+
+    const missingCastItems = updates.filter((u) => !u.topCast || u.topCast.length === 0);
+    const uniqueTmdbIds = Array.from(new Set(missingCastItems.map((u) => u.tmdbId)));
+
+    uniqueTmdbIds.slice(0, 10).forEach(async (tmdbId) => {
+      const sample = updates.find((u) => u.tmdbId === tmdbId);
+      if (!sample) return;
+
+      try {
+        const res = await fetch(`/api/details?id=${tmdbId}&type=${sample.mediaType}`);
+        const details = await res.json();
+
+        if (details.topCast && details.topCast.length > 0) {
+          setUpdates((prev) =>
+            prev.map((item) =>
+              item.tmdbId === tmdbId ? { ...item, topCast: details.topCast, genres: details.genres.length > 0 ? details.genres : item.genres } : item
+            )
+          );
+        }
+      } catch (e) {}
+    });
+  }, [updates.length]);
+
   const parseReleaseDate = (rawDate?: string) => {
     if (!rawDate) {
       return { header: 'UNANNOUNCED / IN DEVELOPMENT', sortKey: '9999-12-31' };
@@ -489,8 +515,11 @@ export default function Home() {
     }
 
     const group = groupedMap.get(item.tmdbId)!;
-    if (item.genres && item.genres.length > 0 && group.genres?.length === 0) {
+    if (item.genres && item.genres.length > 0 && (!group.genres || group.genres.length === 0)) {
       group.genres = item.genres;
+    }
+    if (item.topCast && item.topCast.length > 0 && (!group.topCast || group.topCast.length === 0)) {
+      group.topCast = item.topCast;
     }
 
     if (!group.creatives.some((c) => c.name === item.creativeName && c.role === item.role)) {
@@ -688,7 +717,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.5</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.6</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -938,18 +967,15 @@ export default function Home() {
 
                         <div className="leading-relaxed py-1 flex justify-between items-start">
                           <div>
-                            <div className="font-bold text-[#79c0ff] text-xs">
-                              <span>{formattedCredits}</span>
-                              <span className="text-white font-normal"> - </span>
-                              <a
-                                href={`https://www.themoviedb.org/${item.mediaType}/${item.tmdbId}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[#a5d6ff] font-normal hover:underline"
-                              >
-                                {item.projectTitle}
-                              </a>
-                            </div>
+                            {/* Unified Single Link for Credit & Movie Title */}
+                            <a
+                              href={`https://www.themoviedb.org/${item.mediaType}/${item.tmdbId}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-bold text-[#79c0ff] hover:text-[#a5d6ff] hover:underline text-xs block"
+                            >
+                              {formattedCredits} - {item.projectTitle}
+                            </a>
 
                             {/* Genres & Status Line */}
                             <div className="text-[11px] text-[#8b949e] mt-1 flex flex-wrap items-center gap-2">
@@ -963,6 +989,14 @@ export default function Home() {
                                 </>
                               )}
                             </div>
+
+                            {/* Top Billed Cast Display */}
+                            {item.topCast && item.topCast.length > 0 && (
+                              <div className="text-[11px] text-[#8b949e] mt-1 flex items-center gap-1.5">
+                                <Users className="w-3 h-3 text-[#58a6ff]" />
+                                <span>Starring <strong className="text-white/90 font-semibold">{item.topCast.join(', ')}</strong></span>
+                              </div>
+                            )}
                           </div>
 
                           <button
