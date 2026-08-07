@@ -22,7 +22,7 @@ interface ProjectUpdate {
   sortKey: string;
   status: string;
   director?: string;
-  genreIds?: number[];
+  isDoc?: boolean;
 }
 
 export default function Home() {
@@ -124,6 +124,7 @@ export default function Home() {
             sortKey: p.sort_key,
             status: p.status,
             director: p.director,
+            isDoc: p.is_doc ?? false,
           }))
         );
       }
@@ -191,6 +192,14 @@ export default function Home() {
 
       const newProjects: ProjectUpdate[] = (credits || []).map((c: any) => {
         const dateInfo = parseReleaseDate(c.release_date || c.first_air_date);
+        
+        // TMDB Genre ID 99 = Documentary
+        const isDocumentary = 
+          (c.genre_ids && c.genre_ids.includes(99)) ||
+          (c.genres && c.genres.some((g: any) => g.id === 99 || g.name?.toLowerCase().includes('doc'))) ||
+          (c.title && c.title.toLowerCase().includes('docu')) ||
+          (c.job && c.job.toLowerCase().includes('docu'));
+
         return {
           id: `${person.id}-${c.id}`,
           tmdbId: c.id,
@@ -202,6 +211,7 @@ export default function Home() {
           sortKey: dateInfo.sortKey,
           status: c.release_date || c.first_air_date ? 'Announced' : 'In Development',
           director: c.director || null,
+          isDoc: Boolean(isDocumentary),
         };
       });
 
@@ -223,6 +233,7 @@ export default function Home() {
         sort_key: p.sortKey,
         status: p.status,
         director: p.director,
+        is_doc: p.isDoc,
       }));
 
       if (dbRows.length > 0) {
@@ -246,7 +257,6 @@ export default function Home() {
       complete: async (results) => {
         const rows = results.data as any[];
         
-        // Filter rows matching rating threshold
         const filtered = rows.filter((r) => {
           const rating = parseFloat(r.Rating || r['Rating'] || '0');
           return rating >= importRatingThreshold;
@@ -257,19 +267,16 @@ export default function Home() {
         for (let i = 0; i < filtered.length; i++) {
           const movie = filtered[i];
           const title = movie.Name || movie.Title;
-          const year = movie.Year;
 
           if (!title) continue;
 
           setImportProgress(`Processing (${i + 1}/${filtered.length}): ${title}...`);
 
           try {
-            // Search movie on TMDB search route
             const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
             const searchData = await searchRes.json();
 
             if (searchData && searchData.length > 0) {
-              // Pick top match
               const match = searchData[0];
               await followPerson(match);
             }
@@ -292,7 +299,7 @@ export default function Home() {
   const filteredUpdates = updates.filter((item) => {
     if (!includeMovies && item.mediaType === 'movie') return false;
     if (!includeTV && item.mediaType === 'tv') return false;
-    if (!includeDocs && (item.projectTitle.toLowerCase().includes('doc') || item.role.toLowerCase().includes('doc'))) return false;
+    if (!includeDocs && item.isDoc) return false;
 
     if (roleFilter === 'Directing' && !item.role.toLowerCase().includes('director') && !item.role.toLowerCase().includes('directing')) return false;
     if (roleFilter === 'Writing' && !item.role.toLowerCase().includes('writer') && !item.role.toLowerCase().includes('writing')) return false;
@@ -362,7 +369,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.1</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.2</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             <button
@@ -557,6 +564,12 @@ export default function Home() {
                               <>
                                 <span className="mx-1">·</span>
                                 <span>Dir: {item.director}</span>
+                              </>
+                            )}
+                            {item.isDoc && (
+                              <>
+                                <span className="mx-1">·</span>
+                                <span className="text-blue-400 font-bold">DOC</span>
                               </>
                             )}
                           </div>
