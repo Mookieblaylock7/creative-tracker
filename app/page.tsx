@@ -54,7 +54,7 @@ export default function Home() {
   const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Live In-Memory Details Cache (tmdbId -> { genres, topCast })
+  // Details Cache (tmdbId -> { genres, topCast })
   const [detailsCache, setDetailsCache] = useState<Record<number, { genres: string[]; topCast: string[] }>>({});
 
   const [lastImportBatchIds, setLastImportBatchIds] = useState<number[]>([]);
@@ -138,24 +138,6 @@ export default function Home() {
     }
   };
 
-  const isDocumentaryProject = (title: string, role: string, genreIds?: number[]) => {
-    const t = (title || '').toLowerCase();
-    const r = (role || '').toLowerCase();
-    return (
-      (genreIds && genreIds.includes(99)) ||
-      t.includes('docu') ||
-      t.includes('making of') ||
-      t.includes('architecture of') ||
-      t.includes('portrait of') ||
-      t.includes('mad world of') ||
-      t.includes('national theatre live') ||
-      t.includes('behind the scenes') ||
-      r.includes('self') ||
-      r.includes('archive') ||
-      r.includes('docu')
-    );
-  };
-
   const loadSavedData = async (userId: string) => {
     setLoading(true);
     const todayISO = getTodayISO();
@@ -201,7 +183,6 @@ export default function Home() {
             sortKey: p.sort_key,
             status: p.status,
             director: p.director,
-            isDoc: isDocumentaryProject(p.project_title, p.role),
           }));
 
         setUpdates(loaded);
@@ -292,8 +273,6 @@ export default function Home() {
         const cleanRoleTag = rawRole.replace(/[^a-zA-Z0-9]/g, '');
         const uniqueId = `${person.id}-${c.id}-${cleanRoleTag}`;
 
-        const isDoc = isDocumentaryProject(title, rawRole, c.genre_ids);
-
         newProjects.push({
           id: uniqueId,
           tmdbId: c.id,
@@ -305,7 +284,6 @@ export default function Home() {
           sortKey: dateInfo.sortKey,
           status: rawDate ? 'Announced' : 'In Development',
           director: c.director || null,
-          isDoc,
         });
       }
 
@@ -457,7 +435,6 @@ export default function Home() {
         sortKey: item.sortKey,
         status: item.status,
         director: item.director,
-        isDoc: item.isDoc,
         creatives: [],
       });
     }
@@ -475,15 +452,35 @@ export default function Home() {
   const filteredGroupedUpdates = Array.from(groupedMap.values()).filter((group) => {
     if (!includeMovies && group.mediaType === 'movie') return false;
     if (!includeTV && group.mediaType === 'tv') return false;
-    if (!includeDocs && group.isDoc) return false;
 
+    // LIVE DOCUMENTARY FILTERING
+    const details = detailsCache[group.tmdbId] || { genres: [] };
+    const titleLower = group.projectTitle.toLowerCase();
+    const isDoc =
+      details.genres.some((g) => g.toLowerCase().includes('documentary')) ||
+      titleLower.includes('docu') ||
+      titleLower.includes('making of') ||
+      titleLower.includes('operação lorca') ||
+      titleLower.includes('once upon a time in jersey');
+
+    if (!includeDocs && isDoc) return false;
+
+    // STRICT ROLE FILTERING MATCHED TO CREATIVE'S PRIMARY DEPARTMENT
     const matchesRole = group.creatives.some((c) => {
+      const creativeObj = followed.find((f) => f.name.toLowerCase() === c.name.toLowerCase());
+      const primaryDept = (creativeObj?.department || '').toLowerCase();
       const r = c.role.toLowerCase();
+
       const isDirecting = r.includes('director') || r.includes('directing');
       const isWriting = r.includes('writer') || r.includes('writing') || r.includes('screenplay');
       const isExecProducing = r.includes('executive producer');
       const isProducing = r.includes('producer') && !isExecProducing;
-      const isActing = r.startsWith('cast') || r.includes('actor') || r.includes('starring');
+      const isActing = r.startsWith('cast') || r.includes('actor') || r.includes('starring') || r.includes('self');
+
+      // If they are primarily a Director and acting in something, don't show when Acting checkbox is enabled
+      if (isActing && primaryDept.includes('directing') && !isDirecting) {
+        return showDirecting && showActing;
+      }
 
       if (showDirecting && isDirecting) return true;
       if (showWriting && isWriting) return true;
@@ -526,7 +523,7 @@ export default function Home() {
     if (sortedGroupedUpdates.length === 0) return;
 
     sortedGroupedUpdates.forEach(async (item) => {
-      if (detailsCache[item.tmdbId]) return; // Already cached!
+      if (detailsCache[item.tmdbId]) return;
 
       try {
         const res = await fetch(`/api/details?id=${item.tmdbId}&type=${item.mediaType}`);
@@ -682,7 +679,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.8</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.9</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
