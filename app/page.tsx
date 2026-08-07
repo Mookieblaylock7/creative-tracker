@@ -73,7 +73,7 @@ export default function Home() {
   // Checkbox Role Filters (Left)
   const [showDirecting, setShowDirecting] = useState(true);
   const [showWriting, setShowWriting] = useState(true);
-  const [showActing, setShowActing] = useState(false);
+  const [showActing, setShowActing] = useState(true);
   const [showProducing, setShowProducing] = useState(false);
   const [showExecProducing, setShowExecProducing] = useState(false);
 
@@ -717,7 +717,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.6</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.7</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -844,7 +844,7 @@ export default function Home() {
               <form onSubmit={handleSearch} className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="e.g. Mia Goth..."
+                  placeholder="e.g. Tom Cruise..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2 py-1 focus:outline-none focus:border-[#58a6ff] text-xs placeholder:text-[#8b949e]/50"
@@ -858,32 +858,53 @@ export default function Home() {
               </form>
 
               {searchResults.length > 0 && (
-                <div className="divide-y divide-[#30363d] max-h-52 overflow-y-auto border border-[#30363d] bg-[#0d1117]">
+                <div className="divide-y divide-[#30363d] max-h-64 overflow-y-auto border border-[#30363d] bg-[#0d1117]">
                   {searchResults.map((person) => {
                     const isFollowing = followed.some((f) => f.id === person.id);
+                    const photoUrl = person.profile_path
+                      ? `https://image.tmdb.org/t/p/w92${person.profile_path}`
+                      : null;
+
                     return (
                       <div key={person.id} className="p-2 flex justify-between items-center hover:bg-[#161b22]">
-                        <div>
-                          <div
-                            onClick={() => setSelectedPersonModal({ id: person.id, name: person.name, department: person.known_for_department || 'Directing' })}
-                            className="font-bold text-[#58a6ff] hover:underline cursor-pointer"
-                          >
-                            {person.name}
+                        <div className="flex items-center gap-2.5">
+                          {photoUrl ? (
+                            <img src={photoUrl} alt={person.name} className="w-7 h-9 object-cover rounded border border-[#30363d]" />
+                          ) : (
+                            <div className="w-7 h-9 bg-[#21262d] rounded border border-[#30363d] flex items-center justify-center text-[10px] text-[#8b949e]">
+                              ?
+                            </div>
+                          )}
+                          <div>
+                            <div
+                              onClick={() => setSelectedPersonModal({ id: person.id, name: person.name, department: person.known_for_department || 'Directing' })}
+                              className="font-bold text-[#58a6ff] hover:underline cursor-pointer text-xs"
+                            >
+                              {person.name}
+                            </div>
+                            <div className="text-[10px] text-[#8b949e]">
+                              {person.known_for_department}
+                            </div>
                           </div>
-                          <div className="text-[10px] text-[#8b949e]">{person.known_for_department}</div>
                         </div>
-                        <button
-                          onClick={() => followPerson(person)}
-                          disabled={isFollowing}
-                          className={`px-2 py-1 flex items-center gap-1 border text-[10px] uppercase font-bold ${
-                            isFollowing
-                              ? 'border-transparent text-green-400 cursor-default'
-                              : 'border-[#30363d] bg-[#21262d] hover:bg-[#30363d] text-white'
-                          }`}
-                        >
-                          {isFollowing ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-                          {isFollowing ? 'Following' : 'Follow'}
-                        </button>
+
+                        {isFollowing ? (
+                          <button
+                            onClick={() => unfollowPerson(person.id)}
+                            className="px-2 py-1 flex items-center gap-1 border border-red-900/60 bg-red-950/40 hover:bg-red-900/60 text-red-300 text-[10px] uppercase font-bold transition-colors"
+                          >
+                            <UserMinus className="w-3 h-3 text-red-400" />
+                            Unfollow
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => followPerson(person)}
+                            className="px-2 py-1 flex items-center gap-1 border border-[#30363d] bg-[#21262d] hover:bg-[#30363d] text-white text-[10px] uppercase font-bold transition-colors"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Follow
+                          </button>
+                        )}
                       </div>
                     );
                   })}

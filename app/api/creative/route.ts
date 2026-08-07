@@ -41,6 +41,7 @@ export async function GET(request: Request) {
         media_type: item.media_type || 'movie',
         release_date: item.release_date || item.first_air_date || null,
         job: isCast ? (item.character ? `Cast (${item.character})` : 'Starring') : (item.job || item.department || 'Crew'),
+        character: item.character,
         genre_ids: item.genre_ids || [],
         genres: genres,
       });
