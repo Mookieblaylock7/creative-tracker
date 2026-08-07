@@ -71,17 +71,6 @@ export default function Home() {
   const [includeMovies, setIncludeMovies] = useState(true);
   const [includeTV, setIncludeTV] = useState(true);
 
-  // Letterboxd Import Modal
-  const [isImportOpen, setIsImportOpen] = useState(false);
-  const [importRatingThreshold, setImportRatingThreshold] = useState<number>(4.5);
-  const [importDirectors, setImportDirectors] = useState(true);
-  const [importWriters, setImportWriters] = useState(true);
-  const [importCast, setImportCast] = useState(false);
-  const [importSkipDocs, setImportSkipDocs] = useState(true);
-  const [importProgress, setImportProgress] = useState<string>('');
-  const [isImporting, setIsImporting] = useState(false);
-
-  // Helper: Get today's ISO date string (YYYY-MM-DD)
   const getTodayISO = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -186,8 +175,8 @@ export default function Home() {
         setUpdates(
           savedProjects
             .filter((p) => {
-              if (!p.sort_key || p.sort_key.startsWith('9999')) return true; // Keep unannounced
-              return p.sort_key >= todayISO; // Dynamic Cutoff: Today or later
+              if (!p.sort_key || p.sort_key.startsWith('9999')) return true;
+              return p.sort_key >= todayISO;
             })
             .map((p) => ({
               id: p.id,
@@ -281,7 +270,6 @@ export default function Home() {
       (credits || []).forEach((c: any) => {
         const rawDate = c.release_date || c.first_air_date;
 
-        // Dynamic Cutoff: Keep UNANNOUNCED (no date) OR released today/future
         if (rawDate && rawDate < todayISO) return;
 
         const dateInfo = parseReleaseDate(rawDate);
@@ -444,33 +432,10 @@ export default function Home() {
     });
   };
 
-  const filteredUpdates = updates.filter((item) => {
-    if (!includeMovies && item.mediaType === 'movie') return false;
-    if (!includeTV && item.mediaType === 'tv') return false;
-
-    if (!includeDocs && item.isDoc) return false;
-
-    const r = item.role.toLowerCase();
-
-    const isDirecting = r.includes('director') || r.includes('directing');
-    const isWriting = r.includes('writer') || r.includes('writing') || r.includes('screenplay');
-    const isExecProducing = r.includes('executive producer');
-    const isProducing = r.includes('producer') && !isExecProducing;
-    const isActing = r.startsWith('cast') || r.includes('actor') || r.includes('starring');
-
-    let matchesAnyRole = false;
-    if (showDirecting && isDirecting) matchesAnyRole = true;
-    if (showWriting && isWriting) matchesAnyRole = true;
-    if (showActing && isActing) matchesAnyRole = true;
-    if (showProducing && isProducing) matchesAnyRole = true;
-    if (showExecProducing && isExecProducing) matchesAnyRole = true;
-
-    return matchesAnyRole;
-  });
-
+  // Group raw updates by TMDB project ID FIRST to combine all roles for a single film
   const groupedMap = new Map<number, GroupedProject>();
 
-  filteredUpdates.forEach((item) => {
+  updates.forEach((item) => {
     if (!groupedMap.has(item.tmdbId)) {
       groupedMap.set(item.tmdbId, {
         tmdbId: item.tmdbId,
@@ -495,7 +460,34 @@ export default function Home() {
     }
   });
 
-  const sortedGroupedUpdates = Array.from(groupedMap.values()).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  // Inclusive OR Role Filtering across all combined roles for the project
+  const filteredGroupedUpdates = Array.from(groupedMap.values()).filter((group) => {
+    if (!includeMovies && group.mediaType === 'movie') return false;
+    if (!includeTV && group.mediaType === 'tv') return false;
+    if (!includeDocs && group.isDoc) return false;
+
+    // Check if ANY creative attached to this movie matches ANY active role filter checkbox
+    const matchesRole = group.creatives.some((c) => {
+      const r = c.role.toLowerCase();
+      const isDirecting = r.includes('director') || r.includes('directing');
+      const isWriting = r.includes('writer') || r.includes('writing') || r.includes('screenplay');
+      const isExecProducing = r.includes('executive producer');
+      const isProducing = r.includes('producer') && !isExecProducing;
+      const isActing = r.startsWith('cast') || r.includes('actor') || r.includes('starring');
+
+      if (showDirecting && isDirecting) return true;
+      if (showWriting && isWriting) return true;
+      if (showActing && isActing) return true;
+      if (showProducing && isProducing) return true;
+      if (showExecProducing && isExecProducing) return true;
+
+      return false;
+    });
+
+    return matchesRole;
+  });
+
+  const sortedGroupedUpdates = filteredGroupedUpdates.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
   // Multi-Role Credit Formatter: Dir., Writer, Exec Producer, Producer, Starring
   const formatCreditsLine = (creatives: Array<{ name: string; role: string }>) => {
@@ -596,7 +588,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.8</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.9</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
