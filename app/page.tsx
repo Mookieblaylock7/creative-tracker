@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw } from 'lucide-react';
+import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -56,17 +56,17 @@ export default function Home() {
 
   const [lastImportBatchIds, setLastImportBatchIds] = useState<number[]>([]);
 
-  // Individual Person Filter
-  const [personFilter, setPersonFilter] = useState<string>('all');
+  // Selected Person Dedicated Modal View
+  const [selectedPersonModal, setSelectedPersonModal] = useState<Creative | null>(null);
 
-  // Checkbox Role Filters
+  // Checkbox Role Filters (Left)
   const [showDirecting, setShowDirecting] = useState(true);
   const [showWriting, setShowWriting] = useState(true);
   const [showActing, setShowActing] = useState(false);
   const [showProducing, setShowProducing] = useState(false);
   const [showExecProducing, setShowExecProducing] = useState(false);
 
-  // Media Filters
+  // Media Filters (Right)
   const [includeDocs, setIncludeDocs] = useState(false);
   const [includeMovies, setIncludeMovies] = useState(true);
   const [includeTV, setIncludeTV] = useState(true);
@@ -260,13 +260,8 @@ export default function Home() {
       const res = await fetch(`/api/creative?id=${person.id}`);
       const credits = await res.json();
 
-      const upcomingOnly = (credits || []).filter((c: any) => {
-        const releaseDate = c.release_date || c.first_air_date;
-        if (!releaseDate) return true;
-        return releaseDate >= '2024-01-01';
-      });
-
-      const newProjects: ProjectUpdate[] = upcomingOnly.map((c: any) => {
+      // Ensure all future / upcoming credits map properly without year truncation
+      const newProjects: ProjectUpdate[] = (credits || []).map((c: any) => {
         const dateInfo = parseReleaseDate(c.release_date || c.first_air_date);
         const title = c.title || c.name || 'Untitled Project';
         let assignedRole = c.job || (c.character ? `Cast (${c.character})` : department);
@@ -279,7 +274,7 @@ export default function Home() {
           creativeName: person.name,
           projectTitle: title,
           role: assignedRole,
-          mediaType: c.media_type,
+          mediaType: c.media_type || 'movie',
           releaseDateHeader: dateInfo.header,
           sortKey: dateInfo.sortKey,
           status: c.release_date || c.first_air_date ? 'Announced' : 'In Development',
@@ -424,14 +419,12 @@ export default function Home() {
     });
   };
 
-  // Filter updates accurately
+  // Filter main timeline updates
   const filteredUpdates = updates.filter((item) => {
     if (!includeMovies && item.mediaType === 'movie') return false;
     if (!includeTV && item.mediaType === 'tv') return false;
 
     if (!includeDocs && item.isDoc) return false;
-
-    if (personFilter !== 'all' && item.creativeName !== personFilter) return false;
 
     const r = item.role.toLowerCase();
 
@@ -565,12 +558,17 @@ export default function Home() {
     );
   }
 
+  // Selected Person Projects for Modal
+  const personProjects = selectedPersonModal
+    ? updates.filter((u) => u.creativeName.toLowerCase() === selectedPersonModal.name.toLowerCase())
+    : [];
+
   return (
     <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.3</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.4</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -602,24 +600,9 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Filter Toolbar */}
+        {/* Restored Clean Filter Toolbar: Roles Left, Media Right */}
         <div className="bg-[#161b22] border border-[#30363d] p-3 flex flex-wrap justify-between items-center gap-4">
           <div className="flex flex-wrap items-center gap-3 text-[11px]">
-            {/* Person Filter Dropdown */}
-            <div className="flex items-center gap-1.5 mr-2">
-              <span className="text-[10px] font-bold uppercase text-[#8b949e]">Person:</span>
-              <select
-                value={personFilter}
-                onChange={(e) => setPersonFilter(e.target.value)}
-                className="bg-[#0d1117] border border-[#30363d] text-white px-2 py-0.5 text-[11px] focus:outline-none focus:border-[#58a6ff]"
-              >
-                <option value="all">All Followed People</option>
-                {followed.map((p) => (
-                  <option key={p.id} value={p.name}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-
             <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1 mr-1">
               <Filter className="w-3 h-3 text-[#58a6ff]" /> Roles:
             </span>
@@ -732,7 +715,12 @@ export default function Home() {
                     return (
                       <div key={person.id} className="p-2 flex justify-between items-center hover:bg-[#161b22]">
                         <div>
-                          <div className="font-bold text-[#58a6ff]">{person.name}</div>
+                          <div
+                            onClick={() => setSelectedPersonModal({ id: person.id, name: person.name, department: person.known_for_department || 'Directing' })}
+                            className="font-bold text-[#58a6ff] hover:underline cursor-pointer"
+                          >
+                            {person.name}
+                          </div>
                           <div className="text-[10px] text-[#8b949e]">{person.known_for_department}</div>
                         </div>
                         <button
@@ -773,8 +761,14 @@ export default function Home() {
               <ul className="divide-y divide-[#30363d]/50 max-h-96 overflow-y-auto">
                 {followed.map((person) => (
                   <li key={person.id} className="py-1.5 flex justify-between items-center group px-1">
-                    <div>
-                      <div className="font-bold text-[#58a6ff]">{person.name}</div>
+                    <div
+                      onClick={() => setSelectedPersonModal(person)}
+                      className="cursor-pointer group-hover:text-[#58a6ff]"
+                    >
+                      <div className="font-bold text-[#58a6ff] flex items-center gap-1.5">
+                        {person.name}
+                        <Eye className="w-3 h-3 opacity-0 group-hover:opacity-100 text-[#8b949e] transition-opacity" />
+                      </div>
                       <div className="text-[10px] text-[#8b949e]">{person.department}</div>
                     </div>
                     <button
@@ -861,6 +855,60 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Single Person Dedicated View Modal */}
+      {selectedPersonModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-xl p-5 space-y-4 relative">
+            <button
+              onClick={() => setSelectedPersonModal(null)}
+              className="absolute top-3 right-3 text-[#8b949e] hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="border-b border-[#30363d] pb-2">
+              <h2 className="text-base font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                <span className="text-[#58a6ff]">{selectedPersonModal.name}</span>
+                <span className="text-xs text-[#8b949e] font-normal">({selectedPersonModal.department})</span>
+              </h2>
+              <p className="text-[11px] text-[#8b949e] mt-0.5">All upcoming & logged projects for this creator</p>
+            </div>
+
+            <div className="max-h-96 overflow-y-auto divide-y divide-[#30363d]/50 pr-1 space-y-3">
+              {personProjects.length === 0 ? (
+                <div className="py-8 text-center text-[#8b949e]">
+                  No logged projects found for {selectedPersonModal.name}. Try following them again to fetch latest credits!
+                </div>
+              ) : (
+                personProjects.map((proj) => (
+                  <div key={proj.id} className="pt-2 leading-tight flex justify-between items-start">
+                    <div>
+                      <div className="font-bold text-white text-xs">
+                        <a
+                          href={`https://www.themoviedb.org/${proj.mediaType}/${proj.tmdbId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#a5d6ff] hover:underline"
+                        >
+                          {proj.projectTitle}
+                        </a>
+                      </div>
+                      <div className="text-[11px] text-[#8b949e] mt-1 space-x-2">
+                        <span className="text-[#58a6ff] font-semibold">{proj.role}</span>
+                        <span>·</span>
+                        <span className="text-amber-400">{proj.status}</span>
+                        <span>·</span>
+                        <span>{proj.releaseDateHeader}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Import Modal */}
       {isImportOpen && (
