@@ -97,6 +97,16 @@ export default function Home() {
   const [includeMovies, setIncludeMovies] = useState(true);
   const [includeTV, setIncludeTV] = useState(true);
 
+  // Letterboxd Import Modal States
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importRatingThreshold, setImportRatingThreshold] = useState<number>(4.5);
+  const [importDirectors, setImportDirectors] = useState(true);
+  const [importWriters, setImportWriters] = useState(true);
+  const [importCast, setImportCast] = useState(false);
+  const [importSkipDocs, setImportSkipDocs] = useState(true);
+  const [importProgress, setImportProgress] = useState<string>('');
+  const [isImporting, setIsImporting] = useState(false);
+
   const getTodayISO = () => {
     const today = new Date();
     const year = today.getFullYear();
