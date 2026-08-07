@@ -38,7 +38,6 @@ export default function Home() {
   const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Undo import tracking
   const [lastImportBatchIds, setLastImportBatchIds] = useState<number[]>([]);
 
   // Filters
@@ -101,15 +100,18 @@ export default function Home() {
   const loadSavedData = async (userId: string) => {
     setLoading(true);
     try {
-      const { data: savedCreatives } = await supabase
+      const { data: savedCreatives, error: err1 } = await supabase
         .from('followed_creatives')
         .select('*')
         .eq('user_id', userId);
 
-      const { data: savedProjects } = await supabase
+      const { data: savedProjects, error: err2 } = await supabase
         .from('tracked_projects')
         .select('*')
         .eq('user_id', userId);
+
+      if (err1) console.error('Supabase load creatives error:', err1);
+      if (err2) console.error('Supabase load projects error:', err2);
 
       if (savedCreatives) {
         setFollowed(
@@ -193,20 +195,21 @@ export default function Home() {
       department,
     };
 
+    // Update local state first
     setFollowed((prev) => [...prev, { id: person.id, name: person.name, department }]);
-    await supabase.from('followed_creatives').insert([newCreative]);
+
+    // 1. Insert creative to Supabase & AWAIT completion
+    const { error: creativeErr } = await supabase.from('followed_creatives').upsert([newCreative]);
+    if (creativeErr) console.error('Error saving creative to Supabase:', creativeErr);
 
     try {
       const res = await fetch(`/api/creative?id=${person.id}`);
       const credits = await res.json();
 
-      const todayStr = new Date().toISOString().split('T')[0];
-
-      // Keep unreleased/future projects + in-development ones
       const upcomingOnly = (credits || []).filter((c: any) => {
         const releaseDate = c.release_date || c.first_air_date;
-        if (!releaseDate) return true; // Unannounced / In Dev
-        return releaseDate >= '2024-01-01'; // Include recent/upcoming releases
+        if (!releaseDate) return true;
+        return releaseDate >= '2024-01-01';
       }).slice(0, 30);
 
       const newProjects: ProjectUpdate[] = upcomingOnly.map((c: any) => {
@@ -257,8 +260,10 @@ export default function Home() {
         is_doc: p.isDoc,
       }));
 
+      // 2. Insert tracked projects to Supabase
       if (dbRows.length > 0) {
-        await supabase.from('tracked_projects').upsert(dbRows);
+        const { error: projErr } = await supabase.from('tracked_projects').upsert(dbRows);
+        if (projErr) console.error('Error saving projects to Supabase:', projErr);
       }
     } catch (err) {
       console.error('Error fetching credits:', err);
@@ -469,7 +474,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.9</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.0</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
