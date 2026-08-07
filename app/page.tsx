@@ -48,7 +48,6 @@ export default function Home() {
     }
   };
 
-  // Load from localStorage on initial render
   useEffect(() => {
     try {
       const savedFollowed = localStorage.getItem('followed_creatives');
@@ -63,7 +62,6 @@ export default function Home() {
     }
   }, []);
 
-  // Save to localStorage whenever followed or updates change
   useEffect(() => {
     if (!loading) {
       localStorage.setItem('followed_creatives', JSON.stringify(followed));
@@ -131,7 +129,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase">
-            CREATIVE TRACKER <span className="text-[#58a6ff] text-xs font-normal">v1.0</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.0</span>
           </h1>
           <div className="text-[#8b949e] text-xs">
             Following: <span className="text-white font-bold">{followed.length}</span>
@@ -142,7 +140,7 @@ export default function Home() {
           <div className="space-y-6">
             <section className="bg-[#161b22] border border-[#30363d] p-3 space-y-3">
               <h2 className="font-bold text-white uppercase text-xs tracking-wide border-b border-[#30363d] pb-1.5 flex justify-between">
-                <span>Find Creative</span>
+                <span>Find Film People</span>
                 <span className="text-[10px] text-[#8b949e]">TMDB</span>
               </h2>
 
@@ -223,7 +221,7 @@ export default function Home() {
                   <div className="py-8 text-center text-[#8b949e]">Loading timeline...</div>
                 ) : sortedUpdates.length === 0 ? (
                   <div className="py-8 text-center text-[#8b949e]">
-                    No upcoming projects logged yet. Search and follow a creative to build your feed!
+                    No upcoming projects logged yet. Search and follow a film person to build your feed!
                   </div>
                 ) : (
                   sortedUpdates.map((item, idx) => {
