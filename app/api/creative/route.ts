@@ -46,7 +46,6 @@ export async function GET(request: Request) {
       });
     });
 
-    // Return all credits without year cutoff so unannounced items (dash year) populate
     return NextResponse.json(allCredits);
   } catch (error) {
     console.error('Error fetching creative credits:', error);

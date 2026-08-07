@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye } from 'lucide-react';
+import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye, Users, Tag } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -23,6 +23,8 @@ interface ProjectUpdate {
   status: string;
   director?: string;
   isDoc?: boolean;
+  topCast?: string[];
+  genres?: string[];
 }
 
 interface GroupedProject {
@@ -34,12 +36,36 @@ interface GroupedProject {
   status: string;
   director?: string;
   isDoc?: boolean;
+  topCast?: string[];
+  genres?: string[];
   creatives: Array<{
     name: string;
     role: string;
     updateId: string;
   }>;
 }
+
+const GENRE_MAP: Record<number, string> = {
+  28: 'Action',
+  12: 'Adventure',
+  16: 'Animation',
+  35: 'Comedy',
+  80: 'Crime',
+  99: 'Documentary',
+  18: 'Drama',
+  10751: 'Family',
+  14: 'Fantasy',
+  36: 'History',
+  27: 'Horror',
+  10402: 'Music',
+  9648: 'Mystery',
+  10749: 'Romance',
+  878: 'Sci-Fi',
+  10770: 'TV Movie',
+  53: 'Thriller',
+  10752: 'War',
+  37: 'Western',
+};
 
 export default function Home() {
   const [session, setSession] = useState<any>(null);
@@ -190,6 +216,8 @@ export default function Home() {
               status: p.status,
               director: p.director,
               isDoc: isDocumentaryProject(p.project_title, p.role),
+              topCast: p.top_cast || [],
+              genres: p.genres || [],
             }))
         );
       }
@@ -235,6 +263,20 @@ export default function Home() {
     }
   };
 
+  const fetchProjectDetails = async (tmdbId: number, mediaType: string) => {
+    try {
+      const res = await fetch(`https://api.themoviedb.org/3/${mediaType || 'movie'}/${tmdbId}?append_to_response=credits&api_key=15d2ea6d0dc1d476efbca3eba2b9bbf3`);
+      const data = await res.json();
+
+      const genres = (data.genres || []).map((g: any) => g.name);
+      const topCast = (data.credits?.cast || []).slice(0, 3).map((c: any) => c.name);
+
+      return { genres, topCast };
+    } catch (e) {
+      return { genres: [], topCast: [] };
+    }
+  };
+
   const followPerson = async (person: { id: number; name: string; known_for_department?: string; department?: string }) => {
     if (!session?.user) return;
 
@@ -267,10 +309,10 @@ export default function Home() {
       const todayISO = getTodayISO();
       const newProjects: ProjectUpdate[] = [];
 
-      (credits || []).forEach((c: any) => {
+      for (const c of credits || []) {
         const rawDate = c.release_date || c.first_air_date;
 
-        if (rawDate && rawDate < todayISO) return;
+        if (rawDate && rawDate < todayISO) continue;
 
         const dateInfo = parseReleaseDate(rawDate);
         const title = c.title || c.name || 'Untitled Project';
@@ -280,6 +322,11 @@ export default function Home() {
         const uniqueId = `${person.id}-${c.id}-${cleanRoleTag}`;
 
         const isDoc = isDocumentaryProject(title, rawRole, c.genre_ids);
+
+        // Map genre IDs
+        const mappedGenres = (c.genre_ids || [])
+          .map((gid: number) => GENRE_MAP[gid])
+          .filter(Boolean);
 
         newProjects.push({
           id: uniqueId,
@@ -293,8 +340,10 @@ export default function Home() {
           status: rawDate ? 'Announced' : 'In Development',
           director: c.director || null,
           isDoc,
+          genres: mappedGenres,
+          topCast: [],
         });
-      });
+      }
 
       setUpdates((prev) => {
         const existingIds = new Set(prev.map((p) => p.id));
@@ -314,6 +363,7 @@ export default function Home() {
         sort_key: p.sortKey,
         status: p.status,
         director: p.director,
+        genres: p.genres,
       }));
 
       if (dbRows.length > 0) {
@@ -446,6 +496,8 @@ export default function Home() {
         status: item.status,
         director: item.director,
         isDoc: item.isDoc,
+        genres: item.genres,
+        topCast: item.topCast,
         creatives: [],
       });
     }
@@ -460,13 +512,12 @@ export default function Home() {
     }
   });
 
-  // Inclusive OR Role Filtering across all combined roles for the project
+  // Inclusive OR Role Filtering
   const filteredGroupedUpdates = Array.from(groupedMap.values()).filter((group) => {
     if (!includeMovies && group.mediaType === 'movie') return false;
     if (!includeTV && group.mediaType === 'tv') return false;
     if (!includeDocs && group.isDoc) return false;
 
-    // Check if ANY creative attached to this movie matches ANY active role filter checkbox
     const matchesRole = group.creatives.some((c) => {
       const r = c.role.toLowerCase();
       const isDirecting = r.includes('director') || r.includes('directing');
@@ -489,7 +540,7 @@ export default function Home() {
 
   const sortedGroupedUpdates = filteredGroupedUpdates.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
-  // Multi-Role Credit Formatter: Dir., Writer, Exec Producer, Producer, Starring
+  // Natural Language Credit Formatter
   const formatCreditsLine = (creatives: Array<{ name: string; role: string }>) => {
     const creativeRoleMap = new Map<string, string[]>();
 
@@ -497,10 +548,10 @@ export default function Home() {
       let r = c.role.toLowerCase();
       let roleClean = c.role;
 
-      if (r.includes('director') || r.includes('directing')) roleClean = 'Dir.';
-      else if (r.includes('writer') || r.includes('writing') || r.includes('screenplay')) roleClean = 'Writer';
-      else if (r.includes('executive producer')) roleClean = 'Exec Producer';
-      else if (r.includes('producer')) roleClean = 'Producer';
+      if (r.includes('director') || r.includes('directing')) roleClean = 'Directed';
+      else if (r.includes('writer') || r.includes('writing') || r.includes('screenplay')) roleClean = 'Written';
+      else if (r.includes('executive producer')) roleClean = 'Executive Produced';
+      else if (r.includes('producer')) roleClean = 'Produced';
       else if (r.startsWith('cast') || r.includes('actor')) roleClean = 'Starring';
 
       if (!creativeRoleMap.has(c.name)) {
@@ -514,11 +565,31 @@ export default function Home() {
 
     const entries: string[] = [];
     creativeRoleMap.forEach((roles, name) => {
-      const order = ['Dir.', 'Writer', 'Exec Producer', 'Producer', 'Starring'];
+      const order = ['Directed', 'Written', 'Executive Produced', 'Produced', 'Starring'];
       roles.sort((a, b) => order.indexOf(a) - order.indexOf(b));
 
-      const roleStr = roles.join(', ');
-      entries.push(`${roleStr} ${name}`);
+      let rolePhrase = '';
+      if (roles.length === 1) {
+        if (roles[0] === 'Starring') rolePhrase = `Starring ${name}`;
+        else rolePhrase = `${roles[0]} by ${name}`;
+      } else if (roles.length === 2) {
+        if (roles.includes('Starring')) {
+          const nonStarring = roles.filter((r) => r !== 'Starring');
+          rolePhrase = `${nonStarring[0]} by and Starring ${name}`;
+        } else {
+          rolePhrase = `${roles[0]} and ${roles[1]} by ${name}`;
+        }
+      } else if (roles.length >= 3) {
+        const lastRole = roles[roles.length - 1];
+        const initialRoles = roles.slice(0, roles.length - 1).join(', ');
+        if (roles.includes('Starring') && lastRole === 'Starring') {
+          rolePhrase = `${initialRoles}, and Starring ${name}`;
+        } else {
+          rolePhrase = `${initialRoles}, and ${lastRole} by ${name}`;
+        }
+      }
+
+      entries.push(rolePhrase);
     });
 
     return entries.join(' · ');
@@ -588,7 +659,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.9</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.1</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -811,7 +882,7 @@ export default function Home() {
                 <span className="text-xs text-[#8b949e] font-normal">{sortedGroupedUpdates.length} projects</span>
               </div>
 
-              <div className="p-3 space-y-4">
+              <div className="p-3 space-y-6">
                 {loading ? (
                   <div className="py-8 text-center text-[#8b949e]">Loading timeline...</div>
                 ) : sortedGroupedUpdates.length === 0 ? (
@@ -826,19 +897,19 @@ export default function Home() {
                     const formattedCredits = formatCreditsLine(item.creatives);
 
                     return (
-                      <div key={`${item.tmdbId}-${idx}`} className="space-y-2 group">
+                      <div key={`${item.tmdbId}-${idx}`} className="space-y-3 group">
                         {showDateHeader && (
-                          <div className="pt-2">
+                          <div className="pt-4">
                             <div className="text-right text-white font-bold text-xs tracking-wide uppercase">
                               {item.releaseDateHeader}
                             </div>
-                            <div className="border-b border-[#58a6ff]/40 mt-0.5" />
+                            <div className="border-b border-[#58a6ff]/40 mt-1" />
                           </div>
                         )}
 
-                        <div className="leading-tight py-0.5 flex justify-between items-start">
+                        <div className="leading-relaxed py-1 flex justify-between items-start">
                           <div>
-                            <div className="font-bold text-[#79c0ff]">
+                            <div className="font-bold text-[#79c0ff] text-xs">
                               <span>{formattedCredits}</span>
                               <span className="text-white font-normal"> - </span>
                               <a
@@ -851,8 +922,17 @@ export default function Home() {
                               </a>
                             </div>
 
-                            <div className="text-[11px] text-[#8b949e] mt-0.5">
-                              <span className="text-amber-400/90">{item.status}</span>
+                            {/* Genres & Status Line */}
+                            <div className="text-[11px] text-[#8b949e] mt-1 flex flex-wrap items-center gap-2">
+                              <span className="text-amber-400/90 font-medium">{item.status}</span>
+                              {item.genres && item.genres.length > 0 && (
+                                <>
+                                  <span>·</span>
+                                  <span className="text-xs text-[#8b949e]/80">
+                                    {item.genres.join(', ')}
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
 
