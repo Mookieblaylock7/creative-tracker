@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw } from 'lucide-react';
+import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Clapperboard, PenTool, UserCheck, Video, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -56,8 +56,14 @@ export default function Home() {
 
   const [lastImportBatchIds, setLastImportBatchIds] = useState<number[]>([]);
 
-  // Expanded Filters
-  const [roleFilter, setRoleFilter] = useState<'all' | 'Directing' | 'Writing' | 'Acting' | 'Producing' | 'Exec Producing'>('all');
+  // Checkbox Role Filters
+  const [showDirecting, setShowDirecting] = useState(true);
+  const [showWriting, setShowWriting] = useState(true);
+  const [showActing, setShowActing] = useState(false);
+  const [showProducing, setShowProducing] = useState(false);
+  const [showExecProducing, setShowExecProducing] = useState(false);
+
+  // Media Filters
   const [includeDocs, setIncludeDocs] = useState(false);
   const [includeMovies, setIncludeMovies] = useState(true);
   const [includeTV, setIncludeTV] = useState(true);
@@ -414,6 +420,7 @@ export default function Home() {
     });
   };
 
+  // Filter updates cleanly with Checkbox toggles and strict department role checks
   const filteredUpdates = updates.filter((item) => {
     if (!includeMovies && item.mediaType === 'movie') return false;
     if (!includeTV && item.mediaType === 'tv') return false;
@@ -421,14 +428,30 @@ export default function Home() {
     if (!includeDocs && item.isDoc) return false;
 
     const r = item.role.toLowerCase();
+    const person = followed.find((f) => f.name.toLowerCase() === item.creativeName.toLowerCase());
+    const dept = (person?.department || '').toLowerCase();
 
-    if (roleFilter === 'Directing' && !r.includes('director') && !r.includes('directing')) return false;
-    if (roleFilter === 'Writing' && !r.includes('writer') && !r.includes('writing') && !r.includes('screenplay')) return false;
-    if (roleFilter === 'Acting' && !r.includes('cast') && !r.includes('actor') && !r.includes('starring')) return false;
-    if (roleFilter === 'Producing' && (!r.includes('producer') || r.includes('executive producer'))) return false;
-    if (roleFilter === 'Exec Producing' && !r.includes('executive producer')) return false;
+    // Strict Acting Guard: Ignore acting cameos unless explicitly followed as an actor
+    if (r.startsWith('cast') || r.includes('actor') || r.includes('starring')) {
+      if (dept === 'directing' || dept === 'writing') {
+        return false;
+      }
+      if (!showActing) return false;
+    }
 
-    return true;
+    const isDirecting = r.includes('director') || r.includes('directing') || dept === 'directing';
+    const isWriting = r.includes('writer') || r.includes('writing') || r.includes('screenplay') || dept === 'writing';
+    const isExecProducing = r.includes('executive producer');
+    const isProducing = r.includes('producer') && !isExecProducing;
+
+    let matchesAnyRole = false;
+    if (showDirecting && isDirecting) matchesAnyRole = true;
+    if (showWriting && isWriting) matchesAnyRole = true;
+    if (showActing && (r.startsWith('cast') || r.includes('actor'))) matchesAnyRole = true;
+    if (showProducing && isProducing) matchesAnyRole = true;
+    if (showExecProducing && isExecProducing) matchesAnyRole = true;
+
+    return matchesAnyRole;
   });
 
   const groupedMap = new Map<number, GroupedProject>();
@@ -460,18 +483,20 @@ export default function Home() {
 
   const sortedGroupedUpdates = Array.from(groupedMap.values()).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
-  // Dynamic Credit Formatter with clean role mapping
   const formatCreditsLine = (creatives: Array<{ name: string; role: string }>) => {
     const creativeRoleMap = new Map<string, string[]>();
 
     creatives.forEach((c) => {
+      const person = followed.find((f) => f.name.toLowerCase() === c.name.toLowerCase());
+      const dept = (person?.department || '').toLowerCase();
+
       let r = c.role.toLowerCase();
       let roleClean = c.role;
 
-      if (r === 'director' || r === 'directing') roleClean = 'Dir.';
-      else if (r === 'writer' || r === 'writing' || r === 'screenplay') roleClean = 'Writer';
-      else if (r === 'executive producer') roleClean = 'Exec Producer';
-      else if (r === 'producer') roleClean = 'Producer';
+      if (r.includes('director') || r.includes('directing') || dept === 'directing') roleClean = 'Dir.';
+      else if (r.includes('writer') || r.includes('writing') || r.includes('screenplay') || dept === 'writing') roleClean = 'Writer';
+      else if (r.includes('executive producer')) roleClean = 'Exec Producer';
+      else if (r.includes('producer')) roleClean = 'Producer';
       else if (r.startsWith('cast') || r.includes('actor')) roleClean = 'Starring';
 
       if (!creativeRoleMap.has(c.name)) {
@@ -551,7 +576,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.0</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.1</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -583,25 +608,57 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Filter Toolbar */}
+        {/* Filter Toolbar with Identical Checkbox Styling */}
         <div className="bg-[#161b22] border border-[#30363d] p-3 flex flex-wrap justify-between items-center gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1">
-              <Filter className="w-3 h-3 text-[#58a6ff]" /> Role Filter:
+          <div className="flex flex-wrap items-center gap-3 text-[11px]">
+            <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1 mr-1">
+              <Filter className="w-3 h-3 text-[#58a6ff]" /> Roles:
             </span>
-            {(['all', 'Directing', 'Writing', 'Acting', 'Producing', 'Exec Producing'] as const).map((role) => (
-              <button
-                key={role}
-                onClick={() => setRoleFilter(role)}
-                className={`px-2.5 py-0.5 border text-[11px] font-bold capitalize transition-colors ${
-                  roleFilter === role
-                    ? 'bg-[#1f6beb] text-white border-[#58a6ff]'
-                    : 'bg-[#0d1117] text-[#8b949e] border-[#30363d] hover:text-white'
-                }`}
-              >
-                {role === 'all' ? 'All Roles' : role}
-              </button>
-            ))}
+            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+              <input
+                type="checkbox"
+                checked={showDirecting}
+                onChange={(e) => setShowDirecting(e.target.checked)}
+                className="accent-[#58a6ff]"
+              />
+              Directing
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+              <input
+                type="checkbox"
+                checked={showWriting}
+                onChange={(e) => setShowWriting(e.target.checked)}
+                className="accent-[#58a6ff]"
+              />
+              Writing
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+              <input
+                type="checkbox"
+                checked={showActing}
+                onChange={(e) => setShowActing(e.target.checked)}
+                className="accent-[#58a6ff]"
+              />
+              Acting
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+              <input
+                type="checkbox"
+                checked={showProducing}
+                onChange={(e) => setShowProducing(e.target.checked)}
+                className="accent-[#58a6ff]"
+              />
+              Producing
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+              <input
+                type="checkbox"
+                checked={showExecProducing}
+                onChange={(e) => setShowExecProducing(e.target.checked)}
+                className="accent-[#58a6ff]"
+              />
+              Exec Producing
+            </label>
           </div>
 
           <div className="flex items-center gap-3 text-[11px]">
