@@ -170,11 +170,11 @@ export default function Home() {
     }
   };
 
-  const followPerson = async (person: any) => {
+  const followPerson = async (person: { id: number; name: string; known_for_department?: string; department?: string }) => {
     if (!session?.user) return;
     if (followed.some((f) => f.id === person.id)) return;
 
-    const department = person.known_for_department || 'Directing';
+    const department = person.known_for_department || person.department || 'Directing';
 
     const newCreative = {
       id: person.id,
@@ -247,13 +247,9 @@ export default function Home() {
   };
 
   const unfollowPerson = async (personId: number) => {
-    // Remove person from state
     setFollowed((prev) => prev.filter((f) => f.id !== personId));
-    
-    // Remove person's projects from state timeline
     setUpdates((prev) => prev.filter((p) => !p.id.startsWith(`${personId}-`)));
 
-    // Remove from Supabase
     await supabase.from('followed_creatives').delete().eq('id', personId);
     await supabase.from('tracked_projects').delete().like('id', `${personId}-%`);
   };
@@ -281,23 +277,36 @@ export default function Home() {
           return rating >= importRatingThreshold;
         });
 
-        setImportProgress(`Found ${filtered.length} high-rated entries. Processing...`);
+        setImportProgress(`Found ${filtered.length} high-rated entries. Fetching credits...`);
 
         for (let i = 0; i < filtered.length; i++) {
           const movie = filtered[i];
           const title = movie.Name || movie.Title;
+          const year = movie.Year;
 
           if (!title) continue;
 
-          setImportProgress(`Processing (${i + 1}/${filtered.length}): ${title}...`);
+          setImportProgress(`Parsing film (${i + 1}/${filtered.length}): ${title}...`);
 
           try {
-            const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
-            const searchData = await searchRes.json();
+            const res = await fetch(`/api/movie-credits?title=${encodeURIComponent(title)}&year=${year || ''}`);
+            const data = await res.json();
 
-            if (searchData && searchData.length > 0) {
-              const match = searchData[0];
-              await followPerson(match);
+            if (data && !data.error) {
+              // Skip docs if requested
+              if (importSkipDocs && data.genres && data.genres.includes(99)) {
+                continue;
+              }
+
+              const creatorsToFollow: any[] = [];
+              if (importDirectors && data.directors) creatorsToFollow.push(...data.directors);
+              if (importWriters && data.writers) creatorsToFollow.push(...data.writers);
+              if (importCast && data.topCast) creatorsToFollow.push(...data.topCast);
+
+              // Auto-follow real people found
+              for (const creator of creatorsToFollow) {
+                await followPerson(creator);
+              }
             }
           } catch (err) {
             console.error(`Failed to process ${title}:`, err);
@@ -392,7 +401,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.4</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.5</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             <button
@@ -526,9 +535,9 @@ export default function Home() {
                 <span className="text-[#8b949e]">[{followed.length}]</span>
               </h2>
 
-              <ul className="divide-y divide-[#30363d]/50">
+              <ul className="divide-y divide-[#30363d]/50 max-h-96 overflow-y-auto">
                 {followed.map((person) => (
-                  <li key={person.id} className="py-1.5 flex justify-between items-center group">
+                  <li key={person.id} className="py-1.5 flex justify-between items-center group px-1">
                     <div>
                       <div className="font-bold text-[#58a6ff]">{person.name}</div>
                       <div className="text-[10px] text-[#8b949e]">{person.department}</div>
