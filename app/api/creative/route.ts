@@ -1,5 +1,12 @@
 import { NextResponse } from 'next/server';
 
+const GENRE_MAP: Record<number, string> = {
+  28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
+  99: 'Documentary', 18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History',
+  27: 'Horror', 10402: 'Music', 9648: 'Mystery', 10749: 'Romance', 878: 'Sci-Fi',
+  10770: 'TV Movie', 53: 'Thriller', 10752: 'War', 37: 'Western'
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const personId = searchParams.get('id');
@@ -23,28 +30,24 @@ export async function GET(request: Request) {
 
     const allCredits: any[] = [];
 
-    crew.forEach((item: any) => {
-      allCredits.push({
-        id: item.id,
-        title: item.title || item.name,
-        media_type: item.media_type || 'movie',
-        release_date: item.release_date || item.first_air_date || null,
-        job: item.job || item.department || 'Crew',
-        genre_ids: item.genre_ids || [],
-      });
-    });
+    const processItem = (item: any, isCast: boolean) => {
+      const genres = (item.genre_ids || [])
+        .map((gid: number) => GENRE_MAP[gid])
+        .filter(Boolean);
 
-    cast.forEach((item: any) => {
       allCredits.push({
         id: item.id,
         title: item.title || item.name,
         media_type: item.media_type || 'movie',
         release_date: item.release_date || item.first_air_date || null,
-        job: item.character ? `Cast (${item.character})` : 'Starring',
-        character: item.character,
+        job: isCast ? (item.character ? `Cast (${item.character})` : 'Starring') : (item.job || item.department || 'Crew'),
         genre_ids: item.genre_ids || [],
+        genres: genres,
       });
-    });
+    };
+
+    crew.forEach((item: any) => processItem(item, false));
+    cast.forEach((item: any) => processItem(item, true));
 
     return NextResponse.json(allCredits);
   } catch (error) {
