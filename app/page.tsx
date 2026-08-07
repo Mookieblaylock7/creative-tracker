@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check, LogOut, User } from 'lucide-react';
+import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import Papa from 'papaparse';
 
 interface Creative {
   id: number;
@@ -21,6 +22,7 @@ interface ProjectUpdate {
   sortKey: string;
   status: string;
   director?: string;
+  genreIds?: number[];
 }
 
 export default function Home() {
@@ -35,6 +37,22 @@ export default function Home() {
   const [followed, setFollowed] = useState<Creative[]>([]);
   const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filters
+  const [roleFilter, setRoleFilter] = useState<'all' | 'Directing' | 'Writing' | 'Acting'>('all');
+  const [includeDocs, setIncludeDocs] = useState(false);
+  const [includeMovies, setIncludeMovies] = useState(true);
+  const [includeTV, setIncludeTV] = useState(true);
+
+  // Letterboxd Import Modal
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importRatingThreshold, setImportRatingThreshold] = useState<number>(4.5);
+  const [importDirectors, setImportDirectors] = useState(true);
+  const [importWriters, setImportWriters] = useState(true);
+  const [importCast, setImportCast] = useState(false);
+  const [importSkipDocs, setImportSkipDocs] = useState(true);
+  const [importProgress, setImportProgress] = useState<string>('');
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -125,7 +143,7 @@ export default function Home() {
         password: authPassword,
       });
       if (error) setAuthMessage(error.message);
-      else setAuthMessage('Account created! Check your email or try signing in.');
+      else setAuthMessage('Account created! Try signing in.');
     } else {
       const { error } = await supabase.auth.signInWithPassword({
         email: authEmail,
@@ -155,14 +173,16 @@ export default function Home() {
     if (!session?.user) return;
     if (followed.some((f) => f.id === person.id)) return;
 
+    const department = person.known_for_department || 'Directing';
+
     const newCreative = {
       id: person.id,
       user_id: session.user.id,
       name: person.name,
-      department: person.known_for_department || 'Creative',
+      department,
     };
 
-    setFollowed((prev) => [...prev, { id: person.id, name: person.name, department: newCreative.department }]);
+    setFollowed((prev) => [...prev, { id: person.id, name: person.name, department }]);
     await supabase.from('followed_creatives').insert([newCreative]);
 
     try {
@@ -176,7 +196,7 @@ export default function Home() {
           tmdbId: c.id,
           creativeName: person.name,
           projectTitle: c.title || c.name || 'Untitled Project',
-          role: c.job || (c.character ? `Cast (${c.character})` : 'Creative'),
+          role: c.job || (c.character ? `Cast (${c.character})` : department),
           mediaType: c.media_type,
           releaseDateHeader: dateInfo.header,
           sortKey: dateInfo.sortKey,
@@ -213,7 +233,75 @@ export default function Home() {
     }
   };
 
-  const sortedUpdates = [...updates].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportProgress('Reading CSV...');
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const rows = results.data as any[];
+        
+        // Filter rows matching rating threshold
+        const filtered = rows.filter((r) => {
+          const rating = parseFloat(r.Rating || r['Rating'] || '0');
+          return rating >= importRatingThreshold;
+        });
+
+        setImportProgress(`Found ${filtered.length} high-rated entries. Processing...`);
+
+        for (let i = 0; i < filtered.length; i++) {
+          const movie = filtered[i];
+          const title = movie.Name || movie.Title;
+          const year = movie.Year;
+
+          if (!title) continue;
+
+          setImportProgress(`Processing (${i + 1}/${filtered.length}): ${title}...`);
+
+          try {
+            // Search movie on TMDB search route
+            const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
+            const searchData = await searchRes.json();
+
+            if (searchData && searchData.length > 0) {
+              // Pick top match
+              const match = searchData[0];
+              await followPerson(match);
+            }
+          } catch (err) {
+            console.error(`Failed to process ${title}:`, err);
+          }
+        }
+
+        setImportProgress('Import complete!');
+        setTimeout(() => {
+          setIsImporting(false);
+          setIsImportOpen(false);
+          setImportProgress('');
+        }, 2000);
+      },
+    });
+  };
+
+  // Filtered timeline updates
+  const filteredUpdates = updates.filter((item) => {
+    if (!includeMovies && item.mediaType === 'movie') return false;
+    if (!includeTV && item.mediaType === 'tv') return false;
+    if (!includeDocs && (item.projectTitle.toLowerCase().includes('doc') || item.role.toLowerCase().includes('doc'))) return false;
+
+    if (roleFilter === 'Directing' && !item.role.toLowerCase().includes('director') && !item.role.toLowerCase().includes('directing')) return false;
+    if (roleFilter === 'Writing' && !item.role.toLowerCase().includes('writer') && !item.role.toLowerCase().includes('writing')) return false;
+    if (roleFilter === 'Acting' && !item.role.toLowerCase().includes('cast') && !item.role.toLowerCase().includes('actor')) return false;
+
+    return true;
+  });
+
+  const sortedUpdates = [...filteredUpdates].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
   if (!session) {
     return (
@@ -273,22 +361,81 @@ export default function Home() {
     <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
-          <h1 className="text-lg font-bold text-white tracking-wider uppercase">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.0</span>
+          <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.1</span>
           </h1>
-          <div className="flex items-center gap-4 text-[#8b949e] text-xs">
+          <div className="flex items-center gap-3 text-[#8b949e] text-xs">
+            <button
+              onClick={() => setIsImportOpen(true)}
+              className="bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white px-2.5 py-1 flex items-center gap-1.5 font-bold transition-colors"
+            >
+              <Upload className="w-3.5 h-3.5 text-[#58a6ff]" />
+              Import Letterboxd
+            </button>
             <span className="flex items-center gap-1 text-white">
               <User className="w-3.5 h-3.5 text-[#58a6ff]" />
               {session.user.email}
             </span>
             <button
               onClick={handleSignOut}
-              className="hover:text-white flex items-center gap-1 border border-[#30363d] px-2 py-0.5 bg-[#21262d]"
+              className="hover:text-white flex items-center gap-1 border border-[#30363d] px-2 py-1 bg-[#21262d]"
             >
-              <LogOut className="w-3 h-3" /> Sign Out
+              <LogOut className="w-3 h-3" />
             </button>
           </div>
         </header>
+
+        {/* Filter Toolbar */}
+        <div className="bg-[#161b22] border border-[#30363d] p-3 flex flex-wrap justify-between items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1">
+              <Filter className="w-3 h-3 text-[#58a6ff]" /> Role Filter:
+            </span>
+            {(['all', 'Directing', 'Writing', 'Acting'] as const).map((role) => (
+              <button
+                key={role}
+                onClick={() => setRoleFilter(role)}
+                className={`px-2.5 py-0.5 border text-[11px] font-bold capitalize transition-colors ${
+                  roleFilter === role
+                    ? 'bg-[#1f6beb] text-white border-[#58a6ff]'
+                    : 'bg-[#0d1117] text-[#8b949e] border-[#30363d] hover:text-white'
+                }`}
+              >
+                {role === 'all' ? 'All Roles' : role}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-3 text-[11px]">
+            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+              <input
+                type="checkbox"
+                checked={includeMovies}
+                onChange={(e) => setIncludeMovies(e.target.checked)}
+                className="accent-[#58a6ff]"
+              />
+              <Film className="w-3 h-3 text-[#58a6ff]" /> Movies
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+              <input
+                type="checkbox"
+                checked={includeTV}
+                onChange={(e) => setIncludeTV(e.target.checked)}
+                className="accent-[#58a6ff]"
+              />
+              <Tv className="w-3 h-3 text-[#58a6ff]" /> TV Shows
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+              <input
+                type="checkbox"
+                checked={includeDocs}
+                onChange={(e) => setIncludeDocs(e.target.checked)}
+                className="accent-[#58a6ff]"
+              />
+              <FileText className="w-3 h-3 text-[#58a6ff]" /> Docs
+            </label>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-6">
@@ -362,8 +509,9 @@ export default function Home() {
 
           <div className="md:col-span-2">
             <div className="w-full bg-[#161c23] border border-[#2d3542]">
-              <div className="bg-[#414853] px-3 py-2 text-white font-bold text-sm tracking-wide">
-                Upcoming Projects Timeline
+              <div className="bg-[#414853] px-3 py-2 text-white font-bold text-sm tracking-wide flex justify-between items-center">
+                <span>Upcoming Projects Timeline</span>
+                <span className="text-xs text-[#8b949e] font-normal">{sortedUpdates.length} projects</span>
               </div>
 
               <div className="p-3 space-y-4">
@@ -371,7 +519,7 @@ export default function Home() {
                   <div className="py-8 text-center text-[#8b949e]">Loading timeline...</div>
                 ) : sortedUpdates.length === 0 ? (
                   <div className="py-8 text-center text-[#8b949e]">
-                    No upcoming projects logged yet. Search and follow a film person to build your feed!
+                    No upcoming projects logged for current filters.
                   </div>
                 ) : (
                   sortedUpdates.map((item, idx) => {
@@ -422,6 +570,101 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Import Modal */}
+      {isImportOpen && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative">
+            <button
+              onClick={() => setIsImportOpen(false)}
+              className="absolute top-3 right-3 text-[#8b949e] hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h2 className="text-sm font-bold text-white uppercase tracking-wide border-b border-[#30363d] pb-2 flex items-center gap-2">
+              <Upload className="w-4 h-4 text-[#58a6ff]" /> Import Letterboxd Ratings
+            </h2>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[10px] text-[#8b949e] uppercase font-bold mb-1">
+                  Import Movies Rated:
+                </label>
+                <select
+                  value={importRatingThreshold}
+                  onChange={(e) => setImportRatingThreshold(parseFloat(e.target.value))}
+                  className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2 py-1 text-xs"
+                >
+                  <option value={5.0}>5 Stars Only</option>
+                  <option value={4.5}>4.5 Stars & Above</option>
+                  <option value={4.0}>4.0 Stars & Above</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[10px] text-[#8b949e] uppercase font-bold">Auto-Follow Roles:</label>
+                <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={importDirectors}
+                    onChange={(e) => setImportDirectors(e.target.checked)}
+                    className="accent-[#58a6ff]"
+                  />
+                  Directors
+                </label>
+                <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={importWriters}
+                    onChange={(e) => setImportWriters(e.target.checked)}
+                    className="accent-[#58a6ff]"
+                  />
+                  Writers
+                </label>
+                <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={importCast}
+                    onChange={(e) => setImportCast(e.target.checked)}
+                    className="accent-[#58a6ff]"
+                  />
+                  Lead Actors / Cast
+                </label>
+              </div>
+
+              <div className="pt-2 border-t border-[#30363d]">
+                <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={importSkipDocs}
+                    onChange={(e) => setImportSkipDocs(e.target.checked)}
+                    className="accent-[#58a6ff]"
+                  />
+                  Skip Documentaries
+                </label>
+              </div>
+
+              <div className="pt-3">
+                <label className="block text-[10px] text-[#8b949e] uppercase font-bold mb-1">Select ratings.csv file:</label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  disabled={isImporting}
+                  onChange={handleFileUpload}
+                  className="w-full text-xs text-[#8b949e] file:bg-[#21262d] file:border file:border-[#30363d] file:text-white file:px-3 file:py-1 file:mr-3 file:font-bold cursor-pointer"
+                />
+              </div>
+
+              {importProgress && (
+                <div className="p-2 bg-[#0d1117] border border-[#30363d] text-[#58a6ff] text-[11px] font-mono">
+                  {importProgress}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
