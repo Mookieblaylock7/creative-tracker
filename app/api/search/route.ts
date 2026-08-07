@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import levenshtein from 'fast-levenshtein';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -11,9 +12,9 @@ export async function GET(request: Request) {
   const readToken = process.env.TMDB_READ_TOKEN;
 
   try {
-    // Multi-search handles fuzzy natural language queries & typos much better
-    const res = await fetch(
-      `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(
+    // 1. Try exact/primary search first
+    let res = await fetch(
+      `https://api.themoviedb.org/3/search/person?query=${encodeURIComponent(
         query
       )}&include_adult=false&language=en-US&page=1`,
       {
@@ -24,14 +25,36 @@ export async function GET(request: Request) {
       }
     );
 
-    const data = await res.json();
+    let data = await res.json();
+    let results = data.results || [];
 
-    // Filter down to people results and sort by popularity
-    const people = (data.results || [])
-      .filter((item: any) => item.media_type === 'person')
-      .sort((a: any, b: any) => (b.popularity || 0) - (a.popularity || 0));
+    // 2. If no exact match found, trigger fuzzy fallback search
+    if (results.length === 0 && query.length > 2) {
+      // Search with first 3-4 letters of the first name to catch typos
+      const firstToken = query.split(' ')[0].substring(0, 4);
+      const fallbackRes = await fetch(
+        `https://api.themoviedb.org/3/search/person?query=${encodeURIComponent(
+          firstToken
+        )}&include_adult=false&language=en-US&page=1`,
+        {
+          headers: {
+            Authorization: `Bearer ${readToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      const fallbackData = await fallbackRes.json();
+      const rawCandidates = fallbackData.results || [];
 
-    return NextResponse.json(people);
+      // Sort candidate people by Levenshtein distance to user query
+      results = rawCandidates.sort((a: any, b: any) => {
+        const distA = levenshtein.get(query.toLowerCase(), (a.name || '').toLowerCase());
+        const distB = levenshtein.get(query.toLowerCase(), (b.name || '').toLowerCase());
+        return distA - distB;
+      });
+    }
+
+    return NextResponse.json(results);
   } catch (error) {
     console.error('TMDB Search Error:', error);
     return NextResponse.json({ error: 'Failed to fetch search results' }, { status: 500 });
