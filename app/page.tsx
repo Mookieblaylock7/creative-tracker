@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2 } from 'lucide-react';
+import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -192,7 +192,6 @@ export default function Home() {
 
       const newProjects: ProjectUpdate[] = (credits || []).map((c: any) => {
         const dateInfo = parseReleaseDate(c.release_date || c.first_air_date);
-        
         const titleLower = (c.title || c.name || '').toLowerCase();
         const roleLower = (c.job || '').toLowerCase();
 
@@ -245,6 +244,18 @@ export default function Home() {
     } catch (err) {
       console.error('Error fetching credits:', err);
     }
+  };
+
+  const unfollowPerson = async (personId: number) => {
+    // Remove person from state
+    setFollowed((prev) => prev.filter((f) => f.id !== personId));
+    
+    // Remove person's projects from state timeline
+    setUpdates((prev) => prev.filter((p) => !p.id.startsWith(`${personId}-`)));
+
+    // Remove from Supabase
+    await supabase.from('followed_creatives').delete().eq('id', personId);
+    await supabase.from('tracked_projects').delete().like('id', `${personId}-%`);
   };
 
   const deleteProject = async (id: string) => {
@@ -381,7 +392,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.3</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.4</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             <button
@@ -517,9 +528,18 @@ export default function Home() {
 
               <ul className="divide-y divide-[#30363d]/50">
                 {followed.map((person) => (
-                  <li key={person.id} className="py-1.5 flex justify-between items-center">
-                    <span className="font-bold text-[#58a6ff]">{person.name}</span>
-                    <span className="text-[10px] text-[#8b949e]">{person.department}</span>
+                  <li key={person.id} className="py-1.5 flex justify-between items-center group">
+                    <div>
+                      <div className="font-bold text-[#58a6ff]">{person.name}</div>
+                      <div className="text-[10px] text-[#8b949e]">{person.department}</div>
+                    </div>
+                    <button
+                      onClick={() => unfollowPerson(person.id)}
+                      title={`Unfollow ${person.name}`}
+                      className="opacity-0 group-hover:opacity-100 text-[#8b949e] hover:text-red-400 p-1 transition-opacity"
+                    >
+                      <UserMinus className="w-3.5 h-3.5" />
+                    </button>
                   </li>
                 ))}
               </ul>
