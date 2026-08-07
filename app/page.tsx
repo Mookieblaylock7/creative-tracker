@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Search, Plus, Check } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface Creative {
   id: number;
@@ -48,26 +49,48 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
+  const loadSavedData = async () => {
+    setLoading(true);
     try {
-      const savedFollowed = localStorage.getItem('followed_creatives');
-      const savedUpdates = localStorage.getItem('tracked_projects');
+      const { data: savedCreatives } = await supabase.from('followed_creatives').select('*');
+      const { data: savedProjects } = await supabase.from('tracked_projects').select('*');
 
-      if (savedFollowed) setFollowed(JSON.parse(savedFollowed));
-      if (savedUpdates) setUpdates(JSON.parse(savedUpdates));
+      if (savedCreatives) {
+        setFollowed(
+          savedCreatives.map((c) => ({
+            id: c.id,
+            name: c.name,
+            department: c.department,
+          }))
+        );
+      }
+
+      if (savedProjects) {
+        setUpdates(
+          savedProjects.map((p) => ({
+            id: p.id,
+            tmdbId: p.tmdb_id,
+            creativeName: p.creative_name,
+            projectTitle: p.project_title,
+            role: p.role,
+            mediaType: p.media_type,
+            releaseDateHeader: p.release_date_header,
+            sortKey: p.sort_key,
+            status: p.status,
+            director: p.director,
+          }))
+        );
+      }
     } catch (err) {
-      console.error('Error loading local storage:', err);
+      console.error('Error loading cloud data:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    if (!loading) {
-      localStorage.setItem('followed_creatives', JSON.stringify(followed));
-      localStorage.setItem('tracked_projects', JSON.stringify(updates));
-    }
-  }, [followed, updates, loading]);
+    loadSavedData();
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,10 +110,11 @@ export default function Home() {
     const newCreative = {
       id: person.id,
       name: person.name,
-      department: person.known_for_department || 'Creative'
+      department: person.known_for_department || 'Creative',
     };
 
     setFollowed((prev) => [...prev, newCreative]);
+    await supabase.from('followed_creatives').insert([newCreative]);
 
     try {
       const res = await fetch(`/api/creative?id=${person.id}`);
@@ -108,7 +132,7 @@ export default function Home() {
           releaseDateHeader: dateInfo.header,
           sortKey: dateInfo.sortKey,
           status: c.release_date || c.first_air_date ? 'Announced' : 'In Development',
-          director: c.director || null
+          director: c.director || null,
         };
       });
 
@@ -117,6 +141,23 @@ export default function Home() {
         const filteredNew = newProjects.filter((p) => !existingIds.has(p.id));
         return [...prev, ...filteredNew];
       });
+
+      const dbRows = newProjects.map((p) => ({
+        id: p.id,
+        tmdb_id: p.tmdbId,
+        creative_name: p.creativeName,
+        project_title: p.projectTitle,
+        role: p.role,
+        media_type: p.mediaType,
+        release_date_header: p.releaseDateHeader,
+        sort_key: p.sortKey,
+        status: p.status,
+        director: p.director,
+      }));
+
+      if (dbRows.length > 0) {
+        await supabase.from('tracked_projects').upsert(dbRows);
+      }
     } catch (err) {
       console.error('Error fetching creative credits:', err);
     }
@@ -198,12 +239,8 @@ export default function Home() {
               <ul className="divide-y divide-[#30363d]/50">
                 {followed.map((person) => (
                   <li key={person.id} className="py-1.5 flex justify-between items-center">
-                    <span className="font-bold text-[#58a6ff]">
-                      {person.name}
-                    </span>
-                    <span className="text-[10px] text-[#8b949e]">
-                      {person.department}
-                    </span>
+                    <span className="font-bold text-[#58a6ff]">{person.name}</span>
+                    <span className="text-[10px] text-[#8b949e]">{person.department}</span>
                   </li>
                 ))}
               </ul>
@@ -240,9 +277,7 @@ export default function Home() {
                         )}
 
                         <div className="leading-tight py-0.5">
-                          <span className="font-bold text-[#79c0ff]">
-                            {item.creativeName}
-                          </span>
+                          <span className="font-bold text-[#79c0ff]">{item.creativeName}</span>
                           <span className="text-white font-normal"> - </span>
                           <a
                             href={`https://www.themoviedb.org/${item.mediaType}/${item.tmdbId}`}
