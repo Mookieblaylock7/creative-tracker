@@ -118,21 +118,33 @@ export default function Home() {
     }
   };
 
+  const isDocumentaryProject = (title: string, role: string, genreIds?: number[]) => {
+    const t = (title || '').toLowerCase();
+    const r = (role || '').toLowerCase();
+    return (
+      (genreIds && genreIds.includes(99)) ||
+      t.includes('docu') ||
+      t.includes('making of') ||
+      t.includes('mad world of') ||
+      t.includes('behind the scenes') ||
+      r.includes('self') ||
+      r.includes('archive') ||
+      r.includes('docu')
+    );
+  };
+
   const loadSavedData = async (userId: string) => {
     setLoading(true);
     try {
-      const { data: savedCreatives, error: err1 } = await supabase
+      const { data: savedCreatives } = await supabase
         .from('followed_creatives')
         .select('*')
         .eq('user_id', userId);
 
-      const { data: savedProjects, error: err2 } = await supabase
+      const { data: savedProjects } = await supabase
         .from('tracked_projects')
         .select('*')
         .eq('user_id', userId);
-
-      if (err1) console.error('Supabase load creatives error:', err1);
-      if (err2) console.error('Supabase load projects error:', err2);
 
       if (savedCreatives) {
         const uniqueCreativesMap = new Map();
@@ -150,25 +162,19 @@ export default function Home() {
 
       if (savedProjects) {
         setUpdates(
-          savedProjects.map((p) => {
-            const titleLower = (p.project_title || '').toLowerCase();
-            const roleLower = (p.role || '').toLowerCase();
-            const isDocumentary = titleLower.includes('docu') || titleLower.includes('elegy') || roleLower.includes('docu');
-
-            return {
-              id: p.id,
-              tmdbId: p.tmdb_id,
-              creativeName: p.creative_name,
-              projectTitle: p.project_title,
-              role: p.role,
-              mediaType: p.media_type,
-              releaseDateHeader: p.release_date_header,
-              sortKey: p.sort_key,
-              status: p.status,
-              director: p.director,
-              isDoc: isDocumentary,
-            };
-          })
+          savedProjects.map((p) => ({
+            id: p.id,
+            tmdbId: p.tmdb_id,
+            creativeName: p.creative_name,
+            projectTitle: p.project_title,
+            role: p.role,
+            mediaType: p.media_type,
+            releaseDateHeader: p.release_date_header,
+            sortKey: p.sort_key,
+            status: p.status,
+            director: p.director,
+            isDoc: isDocumentaryProject(p.project_title, p.role),
+          }))
         );
       }
     } catch (err) {
@@ -236,8 +242,7 @@ export default function Home() {
       department,
     };
 
-    const { error: creativeErr } = await supabase.from('followed_creatives').upsert([newCreative]);
-    if (creativeErr) console.error('Error saving creative to Supabase:', creativeErr);
+    await supabase.from('followed_creatives').upsert([newCreative]);
 
     try {
       const res = await fetch(`/api/creative?id=${person.id}`);
@@ -251,28 +256,29 @@ export default function Home() {
 
       const newProjects: ProjectUpdate[] = upcomingOnly.map((c: any) => {
         const dateInfo = parseReleaseDate(c.release_date || c.first_air_date);
-        const titleLower = (c.title || c.name || '').toLowerCase();
-        const roleLower = (c.job || '').toLowerCase();
+        const title = c.title || c.name || 'Untitled Project';
+        
+        let assignedRole = c.job || (c.character ? `Cast (${c.character})` : department);
+        
+        // Correct role assignment if a director/writer gets misattributed as cast
+        if (department === 'Directing' && assignedRole.startsWith('Cast') && !c.character) {
+          assignedRole = 'Directing';
+        }
 
-        const isDocumentary = 
-          (c.genre_ids && c.genre_ids.includes(99)) ||
-          (c.genres && c.genres.some((g: any) => g.id === 99 || g.name?.toLowerCase().includes('doc'))) ||
-          titleLower.includes('docu') ||
-          titleLower.includes('elegy') ||
-          roleLower.includes('docu');
+        const isDoc = isDocumentaryProject(title, assignedRole, c.genre_ids);
 
         return {
           id: `${person.id}-${c.id}`,
           tmdbId: c.id,
           creativeName: person.name,
-          projectTitle: c.title || c.name || 'Untitled Project',
-          role: c.job || (c.character ? `Cast (${c.character})` : department),
+          projectTitle: title,
+          role: assignedRole,
           mediaType: c.media_type,
           releaseDateHeader: dateInfo.header,
           sortKey: dateInfo.sortKey,
           status: c.release_date || c.first_air_date ? 'Announced' : 'In Development',
           director: c.director || null,
-          isDoc: Boolean(isDocumentary),
+          isDoc,
         };
       });
 
@@ -297,8 +303,7 @@ export default function Home() {
       }));
 
       if (dbRows.length > 0) {
-        const { error: projErr } = await supabase.from('tracked_projects').upsert(dbRows);
-        if (projErr) console.error('Error saving projects to Supabase:', projErr);
+        await supabase.from('tracked_projects').upsert(dbRows);
       }
     } catch (err) {
       console.error('Error fetching credits:', err);
@@ -418,10 +423,7 @@ export default function Home() {
     if (!includeMovies && item.mediaType === 'movie') return false;
     if (!includeTV && item.mediaType === 'tv') return false;
 
-    const titleLower = item.projectTitle.toLowerCase();
-    const isDocByTitle = item.isDoc || titleLower.includes('elegy') || titleLower.includes('docu');
-
-    if (!includeDocs && isDocByTitle) return false;
+    if (!includeDocs && item.isDoc) return false;
 
     if (roleFilter === 'Directing' && !item.role.toLowerCase().includes('director') && !item.role.toLowerCase().includes('directing')) return false;
     if (roleFilter === 'Writing' && !item.role.toLowerCase().includes('writer') && !item.role.toLowerCase().includes('writing')) return false;
@@ -460,7 +462,6 @@ export default function Home() {
 
   const sortedGroupedUpdates = Array.from(groupedMap.values()).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
-  // Helper function to format clean role credits line
   const formatCreditsLine = (creatives: Array<{ name: string; role: string }>) => {
     const directors: string[] = [];
     const writers: string[] = [];
@@ -544,7 +545,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.6</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.7</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -751,7 +752,6 @@ export default function Home() {
 
                         <div className="leading-tight py-0.5 flex justify-between items-start">
                           <div>
-                            {/* Single Line: Formatted Roles + Title */}
                             <div className="font-bold text-[#79c0ff]">
                               <span>{formattedCredits}</span>
                               <span className="text-white font-normal"> - </span>
@@ -765,7 +765,6 @@ export default function Home() {
                               </a>
                             </div>
 
-                            {/* Status Line */}
                             <div className="text-[11px] text-[#8b949e] mt-0.5">
                               <span className="text-amber-400/90">{item.status}</span>
                             </div>
