@@ -126,6 +126,7 @@ export default function Home() {
       t.includes('docu') ||
       t.includes('making of') ||
       t.includes('mad world of') ||
+      t.includes('national theatre live') ||
       t.includes('behind the scenes') ||
       r.includes('self') ||
       r.includes('archive') ||
@@ -260,10 +261,9 @@ export default function Home() {
         
         let assignedRole = c.job || (c.character ? `Cast (${c.character})` : department);
         
-        // Correct role assignment if a director/writer gets misattributed as cast
-        if (department === 'Directing' && assignedRole.startsWith('Cast') && !c.character) {
-          assignedRole = 'Directing';
-        }
+        // Force primary department if person was imported as a director/writer
+        if (department === 'Directing') assignedRole = 'Director';
+        else if (department === 'Writing') assignedRole = 'Writer';
 
         const isDoc = isDocumentaryProject(title, assignedRole, c.genre_ids);
 
@@ -418,21 +418,15 @@ export default function Home() {
     });
   };
 
-  // 1. Filter raw updates
   const filteredUpdates = updates.filter((item) => {
     if (!includeMovies && item.mediaType === 'movie') return false;
     if (!includeTV && item.mediaType === 'tv') return false;
 
     if (!includeDocs && item.isDoc) return false;
 
-    if (roleFilter === 'Directing' && !item.role.toLowerCase().includes('director') && !item.role.toLowerCase().includes('directing')) return false;
-    if (roleFilter === 'Writing' && !item.role.toLowerCase().includes('writer') && !item.role.toLowerCase().includes('writing')) return false;
-    if (roleFilter === 'Acting' && !item.role.toLowerCase().includes('cast') && !item.role.toLowerCase().includes('actor')) return false;
-
     return true;
   });
 
-  // 2. Group updates by TMDB ID
   const groupedMap = new Map<number, GroupedProject>();
 
   filteredUpdates.forEach((item) => {
@@ -468,10 +462,15 @@ export default function Home() {
     const cast: string[] = [];
 
     creatives.forEach((c) => {
+      // Cross-check against user's followed list department to resolve ambiguity
+      const followedPerson = followed.find((f) => f.name.toLowerCase() === c.name.toLowerCase());
+      const department = followedPerson?.department || '';
+
       const roleLower = c.role.toLowerCase();
-      if (roleLower.includes('director') || roleLower.includes('directing')) {
+
+      if (department === 'Directing' || roleLower.includes('director') || roleLower.includes('directing')) {
         if (!directors.includes(c.name)) directors.push(c.name);
-      } else if (roleLower.includes('writer') || roleLower.includes('writing') || roleLower.includes('screenplay')) {
+      } else if (department === 'Writing' || roleLower.includes('writer') || roleLower.includes('writing') || roleLower.includes('screenplay')) {
         if (!writers.includes(c.name)) writers.push(c.name);
       } else {
         if (!cast.includes(c.name)) cast.push(c.name);
@@ -545,7 +544,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.7</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.8</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
