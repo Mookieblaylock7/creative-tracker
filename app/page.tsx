@@ -260,26 +260,32 @@ export default function Home() {
       const res = await fetch(`/api/creative?id=${person.id}`);
       const credits = await res.json();
 
-      const newProjects: ProjectUpdate[] = (credits || []).map((c: any) => {
+      const newProjects: ProjectUpdate[] = [];
+
+      (credits || []).forEach((c: any) => {
         const dateInfo = parseReleaseDate(c.release_date || c.first_air_date);
         const title = c.title || c.name || 'Untitled Project';
-        let assignedRole = c.job || (c.character ? `Cast (${c.character})` : department);
+        const rawRole = c.job || (c.character ? `Cast (${c.character})` : department);
 
-        const isDoc = isDocumentaryProject(title, assignedRole, c.genre_ids);
+        // Sanitize role for unique ID to prevent overwriting
+        const cleanRoleTag = rawRole.replace(/[^a-zA-Z0-9]/g, '');
+        const uniqueId = `${person.id}-${c.id}-${cleanRoleTag}`;
 
-        return {
-          id: `${person.id}-${c.id}-${assignedRole.replace(/[^a-zA-Z0-9]/g, '')}`,
+        const isDoc = isDocumentaryProject(title, rawRole, c.genre_ids);
+
+        newProjects.push({
+          id: uniqueId,
           tmdbId: c.id,
           creativeName: person.name,
           projectTitle: title,
-          role: assignedRole,
+          role: rawRole,
           mediaType: c.media_type || 'movie',
           releaseDateHeader: dateInfo.header,
           sortKey: dateInfo.sortKey,
           status: c.release_date || c.first_air_date ? 'Announced' : 'In Development',
           director: c.director || null,
           isDoc,
-        };
+        });
       });
 
       setUpdates((prev) => {
@@ -471,7 +477,7 @@ export default function Home() {
 
   const sortedGroupedUpdates = Array.from(groupedMap.values()).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
-  // Multi-Role Credit Formatter (Dir., Writer, Exec Producer, Starring)
+  // Multi-Role Credit Formatter: Dir., Writer, Exec Producer, Producer, Starring
   const formatCreditsLine = (creatives: Array<{ name: string; role: string }>) => {
     const creativeRoleMap = new Map<string, string[]>();
 
@@ -496,6 +502,10 @@ export default function Home() {
 
     const entries: string[] = [];
     creativeRoleMap.forEach((roles, name) => {
+      // Priority sorting: Dir. -> Writer -> Exec Producer -> Producer -> Starring
+      const order = ['Dir.', 'Writer', 'Exec Producer', 'Producer', 'Starring'];
+      roles.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+
       const roleStr = roles.join(', ');
       entries.push(`${roleStr} ${name}`);
     });
@@ -567,7 +577,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.5</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.6</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -877,7 +887,7 @@ export default function Home() {
             <div className="max-h-96 overflow-y-auto divide-y divide-[#30363d]/50 pr-1 space-y-3">
               {personProjects.length === 0 ? (
                 <div className="py-8 text-center text-[#8b949e]">
-                  No logged projects found for {selectedPersonModal.name}. Try unfollowing and refollowing them to fetch all unannounced projects!
+                  No logged projects found for {selectedPersonModal.name}. Unfollow and refollow them to refresh their credits!
                 </div>
               ) : (
                 personProjects.map((proj) => (
