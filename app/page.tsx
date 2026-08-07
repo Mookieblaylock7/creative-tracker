@@ -60,7 +60,7 @@ export default function Home() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) loadSavedData();
+      if (session) loadSavedData(session.user.id);
       else setLoading(false);
     });
 
@@ -68,7 +68,7 @@ export default function Home() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) loadSavedData();
+      if (session) loadSavedData(session.user.id);
       else {
         setFollowed([]);
         setUpdates([]);
@@ -98,11 +98,18 @@ export default function Home() {
     }
   };
 
-  const loadSavedData = async () => {
+  const loadSavedData = async (userId: string) => {
     setLoading(true);
     try {
-      const { data: savedCreatives } = await supabase.from('followed_creatives').select('*');
-      const { data: savedProjects } = await supabase.from('tracked_projects').select('*');
+      const { data: savedCreatives } = await supabase
+        .from('followed_creatives')
+        .select('*')
+        .eq('user_id', userId);
+
+      const { data: savedProjects } = await supabase
+        .from('tracked_projects')
+        .select('*')
+        .eq('user_id', userId);
 
       if (savedCreatives) {
         setFollowed(
@@ -193,14 +200,14 @@ export default function Home() {
       const res = await fetch(`/api/creative?id=${person.id}`);
       const credits = await res.json();
 
-      // Only process future or unannounced projects to prevent database payload bloat
       const todayStr = new Date().toISOString().split('T')[0];
 
+      // Keep unreleased/future projects + in-development ones
       const upcomingOnly = (credits || []).filter((c: any) => {
         const releaseDate = c.release_date || c.first_air_date;
-        if (!releaseDate) return true; // Keep in-development / unannounced
-        return releaseDate >= todayStr; // Keep upcoming future releases
-      }).slice(0, 20); // Cap at top 20 upcoming
+        if (!releaseDate) return true; // Unannounced / In Dev
+        return releaseDate >= '2024-01-01'; // Include recent/upcoming releases
+      }).slice(0, 30);
 
       const newProjects: ProjectUpdate[] = upcomingOnly.map((c: any) => {
         const dateInfo = parseReleaseDate(c.release_date || c.first_air_date);
@@ -462,7 +469,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.8</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.9</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
