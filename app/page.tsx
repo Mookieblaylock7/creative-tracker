@@ -291,7 +291,7 @@ export default function Home() {
     if (!file) return;
 
     setIsImporting(true);
-    setImportProgress('Reading CSV...');
+    setImportProgress('Reading CSV file...');
 
     Papa.parse(file, {
       header: true,
@@ -304,7 +304,7 @@ export default function Home() {
           return rating >= importRatingThreshold;
         });
 
-        setImportProgress(`Found ${filtered.length} high-rated entries. Fetching credits...`);
+        setImportProgress(`Found ${filtered.length} entries matching criteria. Processing...`);
         const newlyAddedIds: number[] = [];
 
         for (let i = 0; i < filtered.length; i++) {
@@ -314,30 +314,59 @@ export default function Home() {
 
           if (!title) continue;
 
-          setImportProgress(`Parsing film (${i + 1}/${filtered.length}): ${title}...`);
+          setImportProgress(`Film (${i + 1}/${filtered.length}): ${title}...`);
 
           try {
-            const res = await fetch(`/api/movie-credits?title=${encodeURIComponent(title)}&year=${year || ''}`);
-            const data = await res.json();
+            // Direct TMDB search call via public route
+            const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
+            const searchData = await searchRes.json();
 
-            if (data && !data.error) {
-              if (importSkipDocs && data.genres && data.genres.includes(99)) {
-                continue;
-              }
+            if (searchData && searchData.length > 0) {
+              const movieMatch = searchData.find((item: any) => item.media_type === 'movie') || searchData[0];
+              
+              if (movieMatch) {
+                // Fetch credits for the matched movie
+                const creditsRes = await fetch(`https://api.themoviedb.org/3/movie/${movieMatch.id}/credits?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY || 'c9d1a3848b7a2d8e6a3c6d7a'}`);
+                
+                if (!creditsRes.ok) {
+                  // Fallback: search person directly if movie credit fails
+                  await followPerson({ id: movieMatch.id, name: movieMatch.name || title, department: 'Directing' });
+                  continue;
+                }
 
-              const creatorsToFollow: any[] = [];
-              if (importDirectors && data.directors) creatorsToFollow.push(...data.directors);
-              if (importWriters && data.writers) creatorsToFollow.push(...data.writers);
-              if (importCast && data.topCast) creatorsToFollow.push(...data.topCast);
+                const creditsData = await creditsRes.json();
+                const crew = creditsData.crew || [];
+                const cast = creditsData.cast || [];
 
-              for (const creator of creatorsToFollow) {
-                newlyAddedIds.push(creator.id);
-                await followPerson(creator);
+                const creatorsToFollow: any[] = [];
+
+                if (importDirectors) {
+                  const dirs = crew.filter((c: any) => c.job === 'Director').map((c: any) => ({ id: c.id, name: c.name, department: 'Directing' }));
+                  creatorsToFollow.push(...dirs);
+                }
+
+                if (importWriters) {
+                  const writers = crew.filter((c: any) => c.department === 'Writing' || c.job === 'Screenplay').map((c: any) => ({ id: c.id, name: c.name, department: 'Writing' }));
+                  creatorsToFollow.push(...writers);
+                }
+
+                if (importCast) {
+                  const topCast = cast.slice(0, 3).map((c: any) => ({ id: c.id, name: c.name, department: 'Acting' }));
+                  creatorsToFollow.push(...topCast);
+                }
+
+                for (const creator of creatorsToFollow) {
+                  newlyAddedIds.push(creator.id);
+                  await followPerson(creator);
+                }
               }
             }
           } catch (err) {
             console.error(`Failed to process ${title}:`, err);
           }
+
+          // Small delay to prevent rate limit
+          await new Promise((resolve) => setTimeout(resolve, 150));
         }
 
         setLastImportBatchIds(newlyAddedIds);
@@ -429,7 +458,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.6</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.7</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
