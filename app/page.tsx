@@ -56,6 +56,9 @@ export default function Home() {
 
   const [lastImportBatchIds, setLastImportBatchIds] = useState<number[]>([]);
 
+  // Individual Person Filter
+  const [personFilter, setPersonFilter] = useState<string>('all');
+
   // Checkbox Role Filters
   const [showDirecting, setShowDirecting] = useState(true);
   const [showWriting, setShowWriting] = useState(true);
@@ -131,6 +134,8 @@ export default function Home() {
       (genreIds && genreIds.includes(99)) ||
       t.includes('docu') ||
       t.includes('making of') ||
+      t.includes('architecture of') ||
+      t.includes('portrait of') ||
       t.includes('mad world of') ||
       t.includes('national theatre live') ||
       t.includes('behind the scenes') ||
@@ -259,18 +264,17 @@ export default function Home() {
         const releaseDate = c.release_date || c.first_air_date;
         if (!releaseDate) return true;
         return releaseDate >= '2024-01-01';
-      }).slice(0, 30);
+      });
 
       const newProjects: ProjectUpdate[] = upcomingOnly.map((c: any) => {
         const dateInfo = parseReleaseDate(c.release_date || c.first_air_date);
         const title = c.title || c.name || 'Untitled Project';
-        
         let assignedRole = c.job || (c.character ? `Cast (${c.character})` : department);
 
         const isDoc = isDocumentaryProject(title, assignedRole, c.genre_ids);
 
         return {
-          id: `${person.id}-${c.id}`,
+          id: `${person.id}-${c.id}-${assignedRole.replace(/\s+/g, '')}`,
           tmdbId: c.id,
           creativeName: person.name,
           projectTitle: title,
@@ -420,34 +424,27 @@ export default function Home() {
     });
   };
 
-  // Filter updates accurately using exact credit role strings
+  // Filter updates accurately
   const filteredUpdates = updates.filter((item) => {
     if (!includeMovies && item.mediaType === 'movie') return false;
     if (!includeTV && item.mediaType === 'tv') return false;
 
     if (!includeDocs && item.isDoc) return false;
 
-    const r = item.role.toLowerCase();
-    const person = followed.find((f) => f.name.toLowerCase() === item.creativeName.toLowerCase());
-    const dept = (person?.department || '').toLowerCase();
+    if (personFilter !== 'all' && item.creativeName !== personFilter) return false;
 
-    // Strict Acting Guard: Ignore minor acting cameos unless explicitly followed as an actor
-    if (r.startsWith('cast') || r.includes('actor') || r.includes('starring')) {
-      if (dept === 'directing' || dept === 'writing') {
-        return false;
-      }
-      if (!showActing) return false;
-    }
+    const r = item.role.toLowerCase();
 
     const isDirecting = r.includes('director') || r.includes('directing');
     const isWriting = r.includes('writer') || r.includes('writing') || r.includes('screenplay');
     const isExecProducing = r.includes('executive producer');
     const isProducing = r.includes('producer') && !isExecProducing;
+    const isActing = r.startsWith('cast') || r.includes('actor') || r.includes('starring');
 
     let matchesAnyRole = false;
     if (showDirecting && isDirecting) matchesAnyRole = true;
     if (showWriting && isWriting) matchesAnyRole = true;
-    if (showActing && (r.startsWith('cast') || r.includes('actor'))) matchesAnyRole = true;
+    if (showActing && isActing) matchesAnyRole = true;
     if (showProducing && isProducing) matchesAnyRole = true;
     if (showExecProducing && isExecProducing) matchesAnyRole = true;
 
@@ -573,7 +570,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.2</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.3</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -608,6 +605,21 @@ export default function Home() {
         {/* Filter Toolbar */}
         <div className="bg-[#161b22] border border-[#30363d] p-3 flex flex-wrap justify-between items-center gap-4">
           <div className="flex flex-wrap items-center gap-3 text-[11px]">
+            {/* Person Filter Dropdown */}
+            <div className="flex items-center gap-1.5 mr-2">
+              <span className="text-[10px] font-bold uppercase text-[#8b949e]">Person:</span>
+              <select
+                value={personFilter}
+                onChange={(e) => setPersonFilter(e.target.value)}
+                className="bg-[#0d1117] border border-[#30363d] text-white px-2 py-0.5 text-[11px] focus:outline-none focus:border-[#58a6ff]"
+              >
+                <option value="all">All Followed People</option>
+                {followed.map((p) => (
+                  <option key={p.id} value={p.name}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+
             <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1 mr-1">
               <Filter className="w-3 h-3 text-[#58a6ff]" /> Roles:
             </span>
