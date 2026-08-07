@@ -23,8 +23,6 @@ interface ProjectUpdate {
   status: string;
   director?: string;
   isDoc?: boolean;
-  topCast?: string[];
-  genres?: string[];
 }
 
 interface GroupedProject {
@@ -36,21 +34,12 @@ interface GroupedProject {
   status: string;
   director?: string;
   isDoc?: boolean;
-  topCast?: string[];
-  genres?: string[];
   creatives: Array<{
     name: string;
     role: string;
     updateId: string;
   }>;
 }
-
-const GENRE_MAP: Record<number, string> = {
-  28: 'Action', 12: 'Adventure', 16: 'Animation', 35: 'Comedy', 80: 'Crime',
-  99: 'Documentary', 18: 'Drama', 10751: 'Family', 14: 'Fantasy', 36: 'History',
-  27: 'Horror', 10402: 'Music', 9648: 'Mystery', 10749: 'Romance', 878: 'Sci-Fi',
-  10770: 'TV Movie', 53: 'Thriller', 10752: 'War', 37: 'Western',
-};
 
 export default function Home() {
   const [session, setSession] = useState<any>(null);
@@ -64,6 +53,9 @@ export default function Home() {
   const [followed, setFollowed] = useState<Creative[]>([]);
   const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Live In-Memory Details Cache (tmdbId -> { genres, topCast })
+  const [detailsCache, setDetailsCache] = useState<Record<number, { genres: string[]; topCast: string[] }>>({});
 
   const [lastImportBatchIds, setLastImportBatchIds] = useState<number[]>([]);
 
@@ -126,32 +118,6 @@ export default function Home() {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // Fetch top cast on the fly for visible projects missing cast data
-  useEffect(() => {
-    if (updates.length === 0) return;
-
-    const missingCastItems = updates.filter((u) => !u.topCast || u.topCast.length === 0);
-    const uniqueTmdbIds = Array.from(new Set(missingCastItems.map((u) => u.tmdbId)));
-
-    uniqueTmdbIds.slice(0, 10).forEach(async (tmdbId) => {
-      const sample = updates.find((u) => u.tmdbId === tmdbId);
-      if (!sample) return;
-
-      try {
-        const res = await fetch(`/api/details?id=${tmdbId}&type=${sample.mediaType}`);
-        const details = await res.json();
-
-        if (details.topCast && details.topCast.length > 0) {
-          setUpdates((prev) =>
-            prev.map((item) =>
-              item.tmdbId === tmdbId ? { ...item, topCast: details.topCast, genres: details.genres.length > 0 ? details.genres : item.genres } : item
-            )
-          );
-        }
-      } catch (e) {}
-    });
-  }, [updates.length]);
 
   const parseReleaseDate = (rawDate?: string) => {
     if (!rawDate) {
@@ -224,29 +190,19 @@ export default function Home() {
             if (!p.sort_key || p.sort_key.startsWith('9999')) return true;
             return p.sort_key >= todayISO;
           })
-          .map((p) => {
-            let parsedGenres: string[] = [];
-            if (Array.isArray(p.genres) && p.genres.length > 0) parsedGenres = p.genres;
-            else if (p.genre_ids && Array.isArray(p.genre_ids)) {
-              parsedGenres = p.genre_ids.map((gid: number) => GENRE_MAP[gid]).filter(Boolean);
-            }
-
-            return {
-              id: p.id,
-              tmdbId: p.tmdb_id,
-              creativeName: p.creative_name,
-              projectTitle: p.project_title,
-              role: p.role,
-              mediaType: p.media_type,
-              releaseDateHeader: p.release_date_header,
-              sortKey: p.sort_key,
-              status: p.status,
-              director: p.director,
-              isDoc: isDocumentaryProject(p.project_title, p.role),
-              topCast: p.top_cast || [],
-              genres: parsedGenres,
-            };
-          });
+          .map((p) => ({
+            id: p.id,
+            tmdbId: p.tmdb_id,
+            creativeName: p.creative_name,
+            projectTitle: p.project_title,
+            role: p.role,
+            mediaType: p.media_type,
+            releaseDateHeader: p.release_date_header,
+            sortKey: p.sort_key,
+            status: p.status,
+            director: p.director,
+            isDoc: isDocumentaryProject(p.project_title, p.role),
+          }));
 
         setUpdates(loaded);
       }
@@ -338,10 +294,6 @@ export default function Home() {
 
         const isDoc = isDocumentaryProject(title, rawRole, c.genre_ids);
 
-        const mappedGenres = c.genres && c.genres.length > 0
-          ? c.genres
-          : (c.genre_ids || []).map((gid: number) => GENRE_MAP[gid]).filter(Boolean);
-
         newProjects.push({
           id: uniqueId,
           tmdbId: c.id,
@@ -354,8 +306,6 @@ export default function Home() {
           status: rawDate ? 'Announced' : 'In Development',
           director: c.director || null,
           isDoc,
-          genres: mappedGenres,
-          topCast: [],
         });
       }
 
@@ -508,20 +458,11 @@ export default function Home() {
         status: item.status,
         director: item.director,
         isDoc: item.isDoc,
-        genres: item.genres || [],
-        topCast: item.topCast || [],
         creatives: [],
       });
     }
 
     const group = groupedMap.get(item.tmdbId)!;
-    if (item.genres && item.genres.length > 0 && (!group.genres || group.genres.length === 0)) {
-      group.genres = item.genres;
-    }
-    if (item.topCast && item.topCast.length > 0 && (!group.topCast || group.topCast.length === 0)) {
-      group.topCast = item.topCast;
-    }
-
     if (!group.creatives.some((c) => c.name === item.creativeName && c.role === item.role)) {
       group.creatives.push({
         name: item.creativeName,
@@ -579,6 +520,30 @@ export default function Home() {
 
     return a.sortKey.localeCompare(b.sortKey);
   });
+
+  // Automatically fetch & cache genres and top cast for visible projects
+  useEffect(() => {
+    if (sortedGroupedUpdates.length === 0) return;
+
+    sortedGroupedUpdates.forEach(async (item) => {
+      if (detailsCache[item.tmdbId]) return; // Already cached!
+
+      try {
+        const res = await fetch(`/api/details?id=${item.tmdbId}&type=${item.mediaType}`);
+        const data = await res.json();
+
+        setDetailsCache((prev) => ({
+          ...prev,
+          [item.tmdbId]: {
+            genres: data.genres || [],
+            topCast: data.topCast || [],
+          },
+        }));
+      } catch (e) {
+        console.error('Failed to fetch details for', item.tmdbId, e);
+      }
+    });
+  }, [sortedGroupedUpdates, detailsCache]);
 
   const formatCreditsLine = (creatives: Array<{ name: string; role: string }>) => {
     const creativeRoleMap = new Map<string, string[]>();
@@ -717,7 +682,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.7</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.8</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -974,6 +939,7 @@ export default function Home() {
                       idx === 0 || sortedGroupedUpdates[idx - 1].releaseDateHeader !== item.releaseDateHeader;
 
                     const formattedCredits = formatCreditsLine(item.creatives);
+                    const details = detailsCache[item.tmdbId] || { genres: [], topCast: [] };
 
                     return (
                       <div key={`${item.tmdbId}-${idx}`} className="space-y-3 group">
@@ -1001,21 +967,21 @@ export default function Home() {
                             {/* Genres & Status Line */}
                             <div className="text-[11px] text-[#8b949e] mt-1 flex flex-wrap items-center gap-2">
                               <span className="text-amber-400/90 font-medium">{item.status}</span>
-                              {item.genres && item.genres.length > 0 && (
+                              {details.genres.length > 0 && (
                                 <>
                                   <span>·</span>
                                   <span className="text-xs text-[#8b949e]/90 font-medium">
-                                    {item.genres.join(', ')}
+                                    {details.genres.join(', ')}
                                   </span>
                                 </>
                               )}
                             </div>
 
                             {/* Top Billed Cast Display */}
-                            {item.topCast && item.topCast.length > 0 && (
+                            {details.topCast.length > 0 && (
                               <div className="text-[11px] text-[#8b949e] mt-1 flex items-center gap-1.5">
                                 <Users className="w-3 h-3 text-[#58a6ff]" />
-                                <span>Starring <strong className="text-white/90 font-semibold">{item.topCast.join(', ')}</strong></span>
+                                <span>Starring <strong className="text-white/90 font-semibold">{details.topCast.join(', ')}</strong></span>
                               </div>
                             )}
                           </div>
