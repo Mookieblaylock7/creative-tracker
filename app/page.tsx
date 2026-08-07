@@ -193,7 +193,16 @@ export default function Home() {
       const res = await fetch(`/api/creative?id=${person.id}`);
       const credits = await res.json();
 
-      const newProjects: ProjectUpdate[] = (credits || []).map((c: any) => {
+      // Only process future or unannounced projects to prevent database payload bloat
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      const upcomingOnly = (credits || []).filter((c: any) => {
+        const releaseDate = c.release_date || c.first_air_date;
+        if (!releaseDate) return true; // Keep in-development / unannounced
+        return releaseDate >= todayStr; // Keep upcoming future releases
+      }).slice(0, 20); // Cap at top 20 upcoming
+
+      const newProjects: ProjectUpdate[] = upcomingOnly.map((c: any) => {
         const dateInfo = parseReleaseDate(c.release_date || c.first_air_date);
         const titleLower = (c.title || c.name || '').toLowerCase();
         const roleLower = (c.job || '').toLowerCase();
@@ -310,14 +319,12 @@ export default function Home() {
         for (let i = 0; i < filtered.length; i++) {
           const movie = filtered[i];
           const title = movie.Name || movie.Title;
-          const year = movie.Year;
 
           if (!title) continue;
 
           setImportProgress(`Film (${i + 1}/${filtered.length}): ${title}...`);
 
           try {
-            // Direct TMDB search call via public route
             const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
             const searchData = await searchRes.json();
 
@@ -325,11 +332,9 @@ export default function Home() {
               const movieMatch = searchData.find((item: any) => item.media_type === 'movie') || searchData[0];
               
               if (movieMatch) {
-                // Fetch credits for the matched movie
                 const creditsRes = await fetch(`https://api.themoviedb.org/3/movie/${movieMatch.id}/credits?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY || 'c9d1a3848b7a2d8e6a3c6d7a'}`);
                 
                 if (!creditsRes.ok) {
-                  // Fallback: search person directly if movie credit fails
                   await followPerson({ id: movieMatch.id, name: movieMatch.name || title, department: 'Directing' });
                   continue;
                 }
@@ -365,7 +370,6 @@ export default function Home() {
             console.error(`Failed to process ${title}:`, err);
           }
 
-          // Small delay to prevent rate limit
           await new Promise((resolve) => setTimeout(resolve, 150));
         }
 
@@ -458,7 +462,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.7</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.8</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
