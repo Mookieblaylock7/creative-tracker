@@ -119,8 +119,13 @@ export default function Home() {
       if (err2) console.error('Supabase load projects error:', err2);
 
       if (savedCreatives) {
+        // Unique filter on load
+        const uniqueCreativesMap = new Map();
+        savedCreatives.forEach((c) => uniqueCreativesMap.set(c.id, c));
+        const uniqueCreatives = Array.from(uniqueCreativesMap.values());
+
         setFollowed(
-          savedCreatives.map((c) => ({
+          uniqueCreatives.map((c) => ({
             id: c.id,
             name: c.name,
             department: c.department,
@@ -195,18 +200,27 @@ export default function Home() {
 
   const followPerson = async (person: { id: number; name: string; known_for_department?: string; department?: string }) => {
     if (!session?.user) return;
-    if (followed.some((f) => f.id === person.id)) return;
+
+    // Prevent duplicates in state
+    let isAlreadyFollowed = false;
+    setFollowed((prev) => {
+      if (prev.some((f) => f.id === person.id)) {
+        isAlreadyFollowed = true;
+        return prev;
+      }
+      const department = person.known_for_department || person.department || 'Directing';
+      return [...prev, { id: person.id, name: person.name, department }];
+    });
+
+    if (isAlreadyFollowed) return;
 
     const department = person.known_for_department || person.department || 'Directing';
-
     const newCreative = {
       id: person.id,
       user_id: session.user.id,
       name: person.name,
       department,
     };
-
-    setFollowed((prev) => [...prev, { id: person.id, name: person.name, department }]);
 
     const { error: creativeErr } = await supabase.from('followed_creatives').upsert([newCreative]);
     if (creativeErr) console.error('Error saving creative to Supabase:', creativeErr);
@@ -336,7 +350,7 @@ export default function Home() {
         });
 
         setImportProgress(`Found ${filtered.length} matching films. Processing...`);
-        const newlyAddedIds: number[] = [];
+        const newlyAddedIds = new Set<number>();
 
         for (let i = 0; i < filtered.length; i++) {
           const movie = filtered[i];
@@ -361,7 +375,7 @@ export default function Home() {
               if (importCast && data.topCast) creatorsToFollow.push(...data.topCast);
 
               for (const creator of creatorsToFollow) {
-                newlyAddedIds.push(creator.id);
+                newlyAddedIds.add(creator.id);
                 await followPerson(creator);
               }
             }
@@ -372,8 +386,9 @@ export default function Home() {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
 
-        setLastImportBatchIds(newlyAddedIds);
-        localStorage.setItem('last_import_batch', JSON.stringify(newlyAddedIds));
+        const batchArray = Array.from(newlyAddedIds);
+        setLastImportBatchIds(batchArray);
+        localStorage.setItem('last_import_batch', JSON.stringify(batchArray));
         setImportProgress('Import complete!');
         setTimeout(() => {
           setIsImporting(false);
@@ -462,7 +477,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.3</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.4</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
