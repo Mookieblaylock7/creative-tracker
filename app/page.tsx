@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye } from 'lucide-react';
+import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -214,19 +214,29 @@ export default function Home() {
               if (!p.sort_key || p.sort_key.startsWith('9999')) return true;
               return p.sort_key >= todayISO;
             })
-            .map((p) => ({
-              id: p.id,
-              tmdbId: p.tmdb_id,
-              creativeName: p.creative_name,
-              projectTitle: p.project_title,
-              role: p.role,
-              mediaType: p.media_type,
-              releaseDateHeader: p.release_date_header,
-              sortKey: p.sort_key,
-              status: p.status,
-              director: p.director,
-              isDoc: isDocumentaryProject(p.project_title, p.role),
-            }))
+            .map((p) => {
+              let parsedGenres: string[] = [];
+              if (Array.isArray(p.genres)) parsedGenres = p.genres;
+              else if (p.genre_ids && Array.isArray(p.genre_ids)) {
+                parsedGenres = p.genre_ids.map((gid: number) => GENRE_MAP[gid]).filter(Boolean);
+              }
+
+              return {
+                id: p.id,
+                tmdbId: p.tmdb_id,
+                creativeName: p.creative_name,
+                projectTitle: p.project_title,
+                role: p.role,
+                mediaType: p.media_type,
+                releaseDateHeader: p.release_date_header,
+                sortKey: p.sort_key,
+                status: p.status,
+                director: p.director,
+                isDoc: isDocumentaryProject(p.project_title, p.role),
+                topCast: p.top_cast || [],
+                genres: parsedGenres,
+              };
+            })
         );
       }
     } catch (err) {
@@ -361,6 +371,22 @@ export default function Home() {
       if (dbRows.length > 0) {
         await supabase.from('tracked_projects').upsert(dbRows);
       }
+
+      // Asynchronously fetch top cast for these new projects
+      for (const proj of newProjects) {
+        try {
+          const dRes = await fetch(`/api/details?id=${proj.tmdbId}&type=${proj.mediaType}`);
+          const details = await dRes.json();
+
+          if (details.topCast && details.topCast.length > 0) {
+            setUpdates((prev) =>
+              prev.map((item) =>
+                item.tmdbId === proj.tmdbId ? { ...item, topCast: details.topCast } : item
+              )
+            );
+          }
+        } catch (e) {}
+      }
     } catch (err) {
       console.error('Error fetching credits:', err);
     }
@@ -494,6 +520,9 @@ export default function Home() {
     }
 
     const group = groupedMap.get(item.tmdbId)!;
+    if (item.topCast && item.topCast.length > 0) group.topCast = item.topCast;
+    if (item.genres && item.genres.length > 0) group.genres = item.genres;
+
     if (!group.creatives.some((c) => c.name === item.creativeName && c.role === item.role)) {
       group.creatives.push({
         name: item.creativeName,
@@ -669,7 +698,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.2</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.3</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -944,6 +973,14 @@ export default function Home() {
                                 </>
                               )}
                             </div>
+
+                            {/* Top Cast Display */}
+                            {item.topCast && item.topCast.length > 0 && (
+                              <div className="text-[11px] text-[#8b949e] mt-1 flex items-center gap-1.5">
+                                <Users className="w-3 h-3 text-[#58a6ff]" />
+                                <span>Starring <strong className="text-white/90 font-semibold">{item.topCast.join(', ')}</strong></span>
+                              </div>
+                            )}
                           </div>
 
                           <button
