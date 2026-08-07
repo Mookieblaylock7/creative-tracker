@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check } from 'lucide-react';
+import { Search, Plus, Check, LogOut, User } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface Creative {
@@ -24,11 +24,39 @@ interface ProjectUpdate {
 }
 
 export default function Home() {
+  const [session, setSession] = useState<any>(null);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authMessage, setAuthMessage] = useState('');
+
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [followed, setFollowed] = useState<Creative[]>([]);
   const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) loadSavedData();
+      else setLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) loadSavedData();
+      else {
+        setFollowed([]);
+        setUpdates([]);
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const parseReleaseDate = (rawDate?: string) => {
     if (!rawDate) {
@@ -82,15 +110,34 @@ export default function Home() {
         );
       }
     } catch (err) {
-      console.error('Error loading cloud data:', err);
+      console.error('Error loading data:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadSavedData();
-  }, []);
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthMessage('');
+    if (authMode === 'signup') {
+      const { error } = await supabase.auth.signUp({
+        email: authEmail,
+        password: authPassword,
+      });
+      if (error) setAuthMessage(error.message);
+      else setAuthMessage('Account created! Check your email or try signing in.');
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password: authPassword,
+      });
+      if (error) setAuthMessage(error.message);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,15 +152,17 @@ export default function Home() {
   };
 
   const followPerson = async (person: any) => {
+    if (!session?.user) return;
     if (followed.some((f) => f.id === person.id)) return;
 
     const newCreative = {
       id: person.id,
+      user_id: session.user.id,
       name: person.name,
       department: person.known_for_department || 'Creative',
     };
 
-    setFollowed((prev) => [...prev, newCreative]);
+    setFollowed((prev) => [...prev, { id: person.id, name: person.name, department: newCreative.department }]);
     await supabase.from('followed_creatives').insert([newCreative]);
 
     try {
@@ -144,6 +193,7 @@ export default function Home() {
 
       const dbRows = newProjects.map((p) => ({
         id: p.id,
+        user_id: session.user.id,
         tmdb_id: p.tmdbId,
         creative_name: p.creativeName,
         project_title: p.projectTitle,
@@ -159,11 +209,65 @@ export default function Home() {
         await supabase.from('tracked_projects').upsert(dbRows);
       }
     } catch (err) {
-      console.error('Error fetching creative credits:', err);
+      console.error('Error fetching credits:', err);
     }
   };
 
   const sortedUpdates = [...updates].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+  if (!session) {
+    return (
+      <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs flex items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-[#161b22] border border-[#30363d] p-6 space-y-4">
+          <div className="text-center space-y-1">
+            <h1 className="text-xl font-bold text-white tracking-wider uppercase">MY FILM PEOPLE</h1>
+            <p className="text-[#8b949e] text-[11px]">Track upcoming projects from your favorite creators</p>
+          </div>
+
+          <form onSubmit={handleAuth} className="space-y-3 pt-2">
+            <div>
+              <label className="block text-[10px] text-[#8b949e] uppercase font-bold mb-1">Email</label>
+              <input
+                type="email"
+                required
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2.5 py-1.5 focus:outline-none focus:border-[#58a6ff] text-xs"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-[#8b949e] uppercase font-bold mb-1">Password</label>
+              <input
+                type="password"
+                required
+                value={authPassword}
+                onChange={(e) => setAuthPassword(e.target.value)}
+                className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2.5 py-1.5 focus:outline-none focus:border-[#58a6ff] text-xs"
+              />
+            </div>
+
+            {authMessage && <div className="text-amber-400 text-[11px] font-bold">{authMessage}</div>}
+
+            <button
+              type="submit"
+              className="w-full bg-[#238636] hover:bg-[#2ea043] border border-[#30363d] text-white py-1.5 font-bold uppercase transition-colors text-xs"
+            >
+              {authMode === 'login' ? 'Sign In' : 'Create Account'}
+            </button>
+          </form>
+
+          <div className="text-center pt-2 border-t border-[#30363d]">
+            <button
+              onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+              className="text-[#58a6ff] hover:underline text-[11px]"
+            >
+              {authMode === 'login' ? "Need an account? Sign up" : 'Already have an account? Sign in'}
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
@@ -172,8 +276,17 @@ export default function Home() {
           <h1 className="text-lg font-bold text-white tracking-wider uppercase">
             MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.0</span>
           </h1>
-          <div className="text-[#8b949e] text-xs">
-            Following: <span className="text-white font-bold">{followed.length}</span>
+          <div className="flex items-center gap-4 text-[#8b949e] text-xs">
+            <span className="flex items-center gap-1 text-white">
+              <User className="w-3.5 h-3.5 text-[#58a6ff]" />
+              {session.user.email}
+            </span>
+            <button
+              onClick={handleSignOut}
+              className="hover:text-white flex items-center gap-1 border border-[#30363d] px-2 py-0.5 bg-[#21262d]"
+            >
+              <LogOut className="w-3 h-3" /> Sign Out
+            </button>
           </div>
         </header>
 
