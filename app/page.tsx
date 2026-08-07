@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus } from 'lucide-react';
+import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -37,6 +37,9 @@ export default function Home() {
   const [followed, setFollowed] = useState<Creative[]>([]);
   const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Undo import tracking
+  const [lastImportBatchIds, setLastImportBatchIds] = useState<number[]>([]);
 
   // Filters
   const [roleFilter, setRoleFilter] = useState<'all' | 'Directing' | 'Writing' | 'Acting'>('all');
@@ -254,6 +257,30 @@ export default function Home() {
     await supabase.from('tracked_projects').delete().like('id', `${personId}-%`);
   };
 
+  const clearAllFollowed = async () => {
+    if (!confirm('Are you sure you want to unfollow everyone and clear your entire timeline?')) return;
+
+    setFollowed([]);
+    setUpdates([]);
+
+    if (session?.user) {
+      await supabase.from('followed_creatives').delete().eq('user_id', session.user.id);
+      await supabase.from('tracked_projects').delete().eq('user_id', session.user.id);
+    }
+  };
+
+  const undoLastImport = async () => {
+    if (lastImportBatchIds.length === 0) return;
+
+    if (!confirm(`Undo import of the last ${lastImportBatchIds.length} people?`)) return;
+
+    for (const personId of lastImportBatchIds) {
+      await unfollowPerson(personId);
+    }
+
+    setLastImportBatchIds([]);
+  };
+
   const deleteProject = async (id: string) => {
     setUpdates((prev) => prev.filter((p) => p.id !== id));
     await supabase.from('tracked_projects').delete().eq('id', id);
@@ -278,6 +305,7 @@ export default function Home() {
         });
 
         setImportProgress(`Found ${filtered.length} high-rated entries. Fetching credits...`);
+        const newlyAddedIds: number[] = [];
 
         for (let i = 0; i < filtered.length; i++) {
           const movie = filtered[i];
@@ -293,7 +321,6 @@ export default function Home() {
             const data = await res.json();
 
             if (data && !data.error) {
-              // Skip docs if requested
               if (importSkipDocs && data.genres && data.genres.includes(99)) {
                 continue;
               }
@@ -303,8 +330,8 @@ export default function Home() {
               if (importWriters && data.writers) creatorsToFollow.push(...data.writers);
               if (importCast && data.topCast) creatorsToFollow.push(...data.topCast);
 
-              // Auto-follow real people found
               for (const creator of creatorsToFollow) {
+                newlyAddedIds.push(creator.id);
                 await followPerson(creator);
               }
             }
@@ -313,6 +340,7 @@ export default function Home() {
           }
         }
 
+        setLastImportBatchIds(newlyAddedIds);
         setImportProgress('Import complete!');
         setTimeout(() => {
           setIsImporting(false);
@@ -401,9 +429,18 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.5</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.6</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
+            {lastImportBatchIds.length > 0 && (
+              <button
+                onClick={undoLastImport}
+                className="bg-amber-900/40 hover:bg-amber-800/60 border border-amber-600/50 text-amber-200 px-2.5 py-1 flex items-center gap-1.5 font-bold transition-colors"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                Undo Last Import
+              </button>
+            )}
             <button
               onClick={() => setIsImportOpen(true)}
               className="bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white px-2.5 py-1 flex items-center gap-1.5 font-bold transition-colors"
@@ -530,10 +567,20 @@ export default function Home() {
             </section>
 
             <section className="bg-[#161b22] border border-[#30363d] p-3 space-y-2">
-              <h2 className="font-bold text-white uppercase text-xs tracking-wide border-b border-[#30363d] pb-1.5 flex justify-between">
-                <span>People You Follow</span>
-                <span className="text-[#8b949e]">[{followed.length}]</span>
-              </h2>
+              <div className="border-b border-[#30363d] pb-1.5 flex justify-between items-center">
+                <h2 className="font-bold text-white uppercase text-xs tracking-wide">
+                  People You Follow <span className="text-[#8b949e]">[{followed.length}]</span>
+                </h2>
+
+                {followed.length > 0 && (
+                  <button
+                    onClick={clearAllFollowed}
+                    className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-wider"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
 
               <ul className="divide-y divide-[#30363d]/50 max-h-96 overflow-y-auto">
                 {followed.map((person) => (
