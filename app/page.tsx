@@ -63,6 +63,11 @@ export default function Home() {
       else setLoading(false);
     });
 
+    const savedBatch = localStorage.getItem('last_import_batch');
+    if (savedBatch) {
+      try { setLastImportBatchIds(JSON.parse(savedBatch)); } catch(e){}
+    }
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -285,6 +290,8 @@ export default function Home() {
 
     setFollowed([]);
     setUpdates([]);
+    setLastImportBatchIds([]);
+    localStorage.removeItem('last_import_batch');
 
     if (session?.user) {
       await supabase.from('followed_creatives').delete().eq('user_id', session.user.id);
@@ -302,6 +309,7 @@ export default function Home() {
     }
 
     setLastImportBatchIds([]);
+    localStorage.removeItem('last_import_batch');
   };
 
   const deleteProject = async (id: string) => {
@@ -327,57 +335,64 @@ export default function Home() {
           return rating >= importRatingThreshold;
         });
 
-        setImportProgress(`Found ${filtered.length} entries matching criteria. Processing...`);
+        setImportProgress(`Found ${filtered.length} matching films. Processing creators...`);
         const newlyAddedIds: number[] = [];
+
+        const tmdbApiKey = process.env.NEXT_PUBLIC_TMDB_KEY || 'c9d1a3848b7a2d8e6a3c6d7a';
 
         for (let i = 0; i < filtered.length; i++) {
           const movie = filtered[i];
           const title = movie.Name || movie.Title;
+          const year = movie.Year;
 
           if (!title) continue;
 
-          setImportProgress(`Film (${i + 1}/${filtered.length}): ${title}...`);
+          setImportProgress(`Processing (${i + 1}/${filtered.length}): ${title}...`);
 
           try {
-            const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
+            // Direct TMDB Movie Search (strictly searches movies, not people)
+            let searchUrl = `https://api.themoviedb.org/3/search/movie?api_key=${tmdbApiKey}&query=${encodeURIComponent(title)}&include_adult=false`;
+            if (year) searchUrl += `&year=${year}`;
+
+            const searchRes = await fetch(searchUrl);
             const searchData = await searchRes.json();
 
-            if (searchData && searchData.length > 0) {
-              const movieMatch = searchData.find((item: any) => item.media_type === 'movie') || searchData[0];
-              
-              if (movieMatch) {
-                const creditsRes = await fetch(`https://api.themoviedb.org/3/movie/${movieMatch.id}/credits?api_key=${process.env.NEXT_PUBLIC_TMDB_KEY || 'c9d1a3848b7a2d8e6a3c6d7a'}`);
-                
-                if (!creditsRes.ok) {
-                  await followPerson({ id: movieMatch.id, name: movieMatch.name || title, department: 'Directing' });
-                  continue;
-                }
+            if (searchData.results && searchData.results.length > 0) {
+              const movieMatch = searchData.results[0];
 
-                const creditsData = await creditsRes.json();
-                const crew = creditsData.crew || [];
-                const cast = creditsData.cast || [];
+              // Skip documentaries if selected
+              if (importSkipDocs && movieMatch.genre_ids && movieMatch.genre_ids.includes(99)) {
+                continue;
+              }
 
-                const creatorsToFollow: any[] = [];
+              // Fetch real credits for this movie
+              const creditsRes = await fetch(`https://api.themoviedb.org/3/movie/${movieMatch.id}/credits?api_key=${tmdbApiKey}`);
+              if (!creditsRes.ok) continue;
 
-                if (importDirectors) {
-                  const dirs = crew.filter((c: any) => c.job === 'Director').map((c: any) => ({ id: c.id, name: c.name, department: 'Directing' }));
-                  creatorsToFollow.push(...dirs);
-                }
+              const creditsData = await creditsRes.json();
+              const crew = creditsData.crew || [];
+              const cast = creditsData.cast || [];
 
-                if (importWriters) {
-                  const writers = crew.filter((c: any) => c.department === 'Writing' || c.job === 'Screenplay').map((c: any) => ({ id: c.id, name: c.name, department: 'Writing' }));
-                  creatorsToFollow.push(...writers);
-                }
+              const creatorsToFollow: any[] = [];
 
-                if (importCast) {
-                  const topCast = cast.slice(0, 3).map((c: any) => ({ id: c.id, name: c.name, department: 'Acting' }));
-                  creatorsToFollow.push(...topCast);
-                }
+              if (importDirectors) {
+                const dirs = crew.filter((c: any) => c.job === 'Director').map((c: any) => ({ id: c.id, name: c.name, department: 'Directing' }));
+                creatorsToFollow.push(...dirs);
+              }
 
-                for (const creator of creatorsToFollow) {
-                  newlyAddedIds.push(creator.id);
-                  await followPerson(creator);
-                }
+              if (importWriters) {
+                const writers = crew.filter((c: any) => c.department === 'Writing' || c.job === 'Screenplay' || c.job === 'Writer').map((c: any) => ({ id: c.id, name: c.name, department: 'Writing' }));
+                creatorsToFollow.push(...writers);
+              }
+
+              if (importCast) {
+                const topCast = cast.slice(0, 3).map((c: any) => ({ id: c.id, name: c.name, department: 'Acting' }));
+                creatorsToFollow.push(...topCast);
+              }
+
+              for (const creator of creatorsToFollow) {
+                newlyAddedIds.push(creator.id);
+                await followPerson(creator);
               }
             }
           } catch (err) {
@@ -388,6 +403,7 @@ export default function Home() {
         }
 
         setLastImportBatchIds(newlyAddedIds);
+        localStorage.setItem('last_import_batch', JSON.stringify(newlyAddedIds));
         setImportProgress('Import complete!');
         setTimeout(() => {
           setIsImporting(false);
@@ -476,7 +492,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.1</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.2</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -485,7 +501,7 @@ export default function Home() {
                 className="bg-amber-900/40 hover:bg-amber-800/60 border border-amber-600/50 text-amber-200 px-2.5 py-1 flex items-center gap-1.5 font-bold transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                Undo Last Import
+                Undo Last Import ({lastImportBatchIds.length})
               </button>
             )}
             <button
