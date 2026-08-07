@@ -8,7 +8,7 @@ export async function POST(request: Request) {
     const { to, subject, html } = await request.json();
 
     const data = await resend.emails.send({
-      from: 'My Film People <onboarding@resend.dev>',
+      from: 'My Film People <alerts@myfilmpeople.app>',
       to: [to],
       subject: subject,
       html: html,
