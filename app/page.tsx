@@ -25,6 +25,22 @@ interface ProjectUpdate {
   isDoc?: boolean;
 }
 
+interface GroupedProject {
+  tmdbId: number;
+  projectTitle: string;
+  mediaType: 'movie' | 'tv';
+  releaseDateHeader: string;
+  sortKey: string;
+  status: string;
+  director?: string;
+  isDoc?: boolean;
+  creatives: Array<{
+    name: string;
+    role: string;
+    updateId: string;
+  }>;
+}
+
 export default function Home() {
   const [session, setSession] = useState<any>(null);
   const [authEmail, setAuthEmail] = useState('');
@@ -119,7 +135,6 @@ export default function Home() {
       if (err2) console.error('Supabase load projects error:', err2);
 
       if (savedCreatives) {
-        // Unique filter on load
         const uniqueCreativesMap = new Map();
         savedCreatives.forEach((c) => uniqueCreativesMap.set(c.id, c));
         const uniqueCreatives = Array.from(uniqueCreativesMap.values());
@@ -201,7 +216,6 @@ export default function Home() {
   const followPerson = async (person: { id: number; name: string; known_for_department?: string; department?: string }) => {
     if (!session?.user) return;
 
-    // Prevent duplicates in state
     let isAlreadyFollowed = false;
     setFollowed((prev) => {
       if (prev.some((f) => f.id === person.id)) {
@@ -399,7 +413,7 @@ export default function Home() {
     });
   };
 
-  // Filtered timeline updates
+  // 1. Filter raw updates
   const filteredUpdates = updates.filter((item) => {
     if (!includeMovies && item.mediaType === 'movie') return false;
     if (!includeTV && item.mediaType === 'tv') return false;
@@ -416,7 +430,60 @@ export default function Home() {
     return true;
   });
 
-  const sortedUpdates = [...filteredUpdates].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  // 2. Group updates by TMDB ID
+  const groupedMap = new Map<number, GroupedProject>();
+
+  filteredUpdates.forEach((item) => {
+    if (!groupedMap.has(item.tmdbId)) {
+      groupedMap.set(item.tmdbId, {
+        tmdbId: item.tmdbId,
+        projectTitle: item.projectTitle,
+        mediaType: item.mediaType,
+        releaseDateHeader: item.releaseDateHeader,
+        sortKey: item.sortKey,
+        status: item.status,
+        director: item.director,
+        isDoc: item.isDoc,
+        creatives: [],
+      });
+    }
+
+    const group = groupedMap.get(item.tmdbId)!;
+    if (!group.creatives.some((c) => c.name === item.creativeName && c.role === item.role)) {
+      group.creatives.push({
+        name: item.creativeName,
+        role: item.role,
+        updateId: item.id,
+      });
+    }
+  });
+
+  const sortedGroupedUpdates = Array.from(groupedMap.values()).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+  // Helper function to format clean role credits line
+  const formatCreditsLine = (creatives: Array<{ name: string; role: string }>) => {
+    const directors: string[] = [];
+    const writers: string[] = [];
+    const cast: string[] = [];
+
+    creatives.forEach((c) => {
+      const roleLower = c.role.toLowerCase();
+      if (roleLower.includes('director') || roleLower.includes('directing')) {
+        if (!directors.includes(c.name)) directors.push(c.name);
+      } else if (roleLower.includes('writer') || roleLower.includes('writing') || roleLower.includes('screenplay')) {
+        if (!writers.includes(c.name)) writers.push(c.name);
+      } else {
+        if (!cast.includes(c.name)) cast.push(c.name);
+      }
+    });
+
+    const parts: string[] = [];
+    if (directors.length > 0) parts.push(`Dir. ${directors.join(', ')}`);
+    if (writers.length > 0) parts.push(`Writer ${writers.join(', ')}`);
+    if (cast.length > 0) parts.push(`Starring ${cast.join(', ')}`);
+
+    return parts.join(' · ');
+  };
 
   if (!session) {
     return (
@@ -477,7 +544,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.4</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v2.6</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -654,23 +721,25 @@ export default function Home() {
             <div className="w-full bg-[#161c23] border border-[#2d3542]">
               <div className="bg-[#414853] px-3 py-2 text-white font-bold text-sm tracking-wide flex justify-between items-center">
                 <span>Upcoming Projects Timeline</span>
-                <span className="text-xs text-[#8b949e] font-normal">{sortedUpdates.length} projects</span>
+                <span className="text-xs text-[#8b949e] font-normal">{sortedGroupedUpdates.length} projects</span>
               </div>
 
               <div className="p-3 space-y-4">
                 {loading ? (
                   <div className="py-8 text-center text-[#8b949e]">Loading timeline...</div>
-                ) : sortedUpdates.length === 0 ? (
+                ) : sortedGroupedUpdates.length === 0 ? (
                   <div className="py-8 text-center text-[#8b949e]">
                     No upcoming projects logged for current filters.
                   </div>
                 ) : (
-                  sortedUpdates.map((item, idx) => {
+                  sortedGroupedUpdates.map((item, idx) => {
                     const showDateHeader =
-                      idx === 0 || sortedUpdates[idx - 1].releaseDateHeader !== item.releaseDateHeader;
+                      idx === 0 || sortedGroupedUpdates[idx - 1].releaseDateHeader !== item.releaseDateHeader;
+
+                    const formattedCredits = formatCreditsLine(item.creatives);
 
                     return (
-                      <div key={`${item.id}-${idx}`} className="space-y-2 group">
+                      <div key={`${item.tmdbId}-${idx}`} className="space-y-2 group">
                         {showDateHeader && (
                           <div className="pt-2">
                             <div className="text-right text-white font-bold text-xs tracking-wide uppercase">
@@ -682,33 +751,31 @@ export default function Home() {
 
                         <div className="leading-tight py-0.5 flex justify-between items-start">
                           <div>
-                            <span className="font-bold text-[#79c0ff]">{item.creativeName}</span>
-                            <span className="text-white font-normal"> - </span>
-                            <a
-                              href={`https://www.themoviedb.org/${item.mediaType}/${item.tmdbId}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-[#a5d6ff] font-normal hover:underline"
-                            >
-                              {item.projectTitle}
-                            </a>
+                            {/* Single Line: Formatted Roles + Title */}
+                            <div className="font-bold text-[#79c0ff]">
+                              <span>{formattedCredits}</span>
+                              <span className="text-white font-normal"> - </span>
+                              <a
+                                href={`https://www.themoviedb.org/${item.mediaType}/${item.tmdbId}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[#a5d6ff] font-normal hover:underline"
+                              >
+                                {item.projectTitle}
+                              </a>
+                            </div>
 
+                            {/* Status Line */}
                             <div className="text-[11px] text-[#8b949e] mt-0.5">
-                              <span>{item.role}</span>
-                              <span className="mx-1">·</span>
                               <span className="text-amber-400/90">{item.status}</span>
-                              {item.director && (
-                                <>
-                                  <span className="mx-1">·</span>
-                                  <span>Dir: {item.director}</span>
-                                </>
-                              )}
                             </div>
                           </div>
 
                           <button
-                            onClick={() => deleteProject(item.id)}
-                            title="Remove from timeline"
+                            onClick={() => {
+                              item.creatives.forEach((c) => deleteProject(c.updateId));
+                            }}
+                            title="Remove project from timeline"
                             className="opacity-0 group-hover:opacity-100 text-[#8b949e] hover:text-red-400 p-1 transition-opacity"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
