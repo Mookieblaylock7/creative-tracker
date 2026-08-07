@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye, Users, Tag } from 'lucide-react';
+import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -216,8 +216,6 @@ export default function Home() {
               status: p.status,
               director: p.director,
               isDoc: isDocumentaryProject(p.project_title, p.role),
-              topCast: p.top_cast || [],
-              genres: p.genres || [],
             }))
         );
       }
@@ -260,20 +258,6 @@ export default function Home() {
       setSearchResults(data);
     } catch (err) {
       console.error(err);
-    }
-  };
-
-  const fetchProjectDetails = async (tmdbId: number, mediaType: string) => {
-    try {
-      const res = await fetch(`https://api.themoviedb.org/3/${mediaType || 'movie'}/${tmdbId}?append_to_response=credits&api_key=15d2ea6d0dc1d476efbca3eba2b9bbf3`);
-      const data = await res.json();
-
-      const genres = (data.genres || []).map((g: any) => g.name);
-      const topCast = (data.credits?.cast || []).slice(0, 3).map((c: any) => c.name);
-
-      return { genres, topCast };
-    } catch (e) {
-      return { genres: [], topCast: [] };
     }
   };
 
@@ -323,7 +307,6 @@ export default function Home() {
 
         const isDoc = isDocumentaryProject(title, rawRole, c.genre_ids);
 
-        // Map genre IDs
         const mappedGenres = (c.genre_ids || [])
           .map((gid: number) => GENRE_MAP[gid])
           .filter(Boolean);
@@ -363,7 +346,6 @@ export default function Home() {
         sort_key: p.sortKey,
         status: p.status,
         director: p.director,
-        genres: p.genres,
       }));
 
       if (dbRows.length > 0) {
@@ -482,7 +464,6 @@ export default function Home() {
     });
   };
 
-  // Group raw updates by TMDB project ID FIRST to combine all roles for a single film
   const groupedMap = new Map<number, GroupedProject>();
 
   updates.forEach((item) => {
@@ -512,7 +493,6 @@ export default function Home() {
     }
   });
 
-  // Inclusive OR Role Filtering
   const filteredGroupedUpdates = Array.from(groupedMap.values()).filter((group) => {
     if (!includeMovies && group.mediaType === 'movie') return false;
     if (!includeTV && group.mediaType === 'tv') return false;
@@ -538,9 +518,30 @@ export default function Home() {
     return matchesRole;
   });
 
-  const sortedGroupedUpdates = filteredGroupedUpdates.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  const getLastName = (fullName: string) => {
+    const parts = fullName.trim().split(' ');
+    return parts.length > 1 ? parts[parts.length - 1] : fullName;
+  };
 
-  // Natural Language Credit Formatter
+  const sortedGroupedUpdates = filteredGroupedUpdates.sort((a, b) => {
+    const isUnannouncedA = a.sortKey.startsWith('9999');
+    const isUnannouncedB = b.sortKey.startsWith('9999');
+
+    if (isUnannouncedA && isUnannouncedB) {
+      const nameA = a.creatives[0]?.name || '';
+      const nameB = b.creatives[0]?.name || '';
+      const lastNameA = getLastName(nameA);
+      const lastNameB = getLastName(nameB);
+
+      const lastNameCompare = lastNameA.localeCompare(lastNameB);
+      if (lastNameCompare !== 0) return lastNameCompare;
+
+      return a.projectTitle.localeCompare(b.projectTitle);
+    }
+
+    return a.sortKey.localeCompare(b.sortKey);
+  });
+
   const formatCreditsLine = (creatives: Array<{ name: string; role: string }>) => {
     const creativeRoleMap = new Map<string, string[]>();
 
@@ -649,7 +650,6 @@ export default function Home() {
     );
   }
 
-  // Selected Person Projects for Dedicated Modal
   const personProjects = selectedPersonModal
     ? updates.filter((u) => u.creativeName.toLowerCase() === selectedPersonModal.name.toLowerCase())
     : [];
@@ -659,7 +659,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.1</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.2</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
