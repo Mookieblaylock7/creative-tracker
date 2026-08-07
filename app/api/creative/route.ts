@@ -1,38 +1,55 @@
 import { NextResponse } from 'next/server';
-import { getPersonUpcomingCredits, getProjectDetails } from '@/lib/tmdb';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
-  if (!id) return NextResponse.json([]);
+  const personId = searchParams.get('id');
 
-  const credits = await getPersonUpcomingCredits(parseInt(id, 10));
+  if (!personId) {
+    return NextResponse.json({ error: 'Person ID required' }, { status: 400 });
+  }
 
-  // Enrich top 10 upcoming projects with Director & Co-stars
-  const enrichedCredits = await Promise.all(
-    credits.slice(0, 10).map(async (credit) => {
-      try {
-        const details = await getProjectDetails(credit.media_type, credit.id);
-        if (!details || !details.credits) return credit;
+  const readToken = process.env.TMDB_READ_TOKEN;
+  const headers = {
+    Authorization: `Bearer ${readToken}`,
+    'Content-Type': 'application/json',
+  };
 
-        const directorObj = details.credits.crew?.find((c: any) => c.job === 'Director');
-        const director = directorObj ? directorObj.name : undefined;
+  try {
+    const res = await fetch(`https://api.themoviedb.org/3/person/${personId}/combined_credits`, { headers });
+    const data = await res.json();
 
-        const stars = details.credits.cast
-          ?.filter((c: any) => c.id !== parseInt(id, 10))
-          .slice(0, 3)
-          .map((c: any) => c.name);
+    const crew = data.crew || [];
+    const cast = data.cast || [];
 
-        return {
-          ...credit,
-          director,
-          stars
-        };
-      } catch {
-        return credit;
-      }
-    })
-  );
+    const allCredits: any[] = [];
 
-  return NextResponse.json(enrichedCredits);
+    crew.forEach((item: any) => {
+      allCredits.push({
+        id: item.id,
+        title: item.title || item.name,
+        media_type: item.media_type || 'movie',
+        release_date: item.release_date || item.first_air_date || null,
+        job: item.job || item.department || 'Crew',
+        genre_ids: item.genre_ids || [],
+      });
+    });
+
+    cast.forEach((item: any) => {
+      allCredits.push({
+        id: item.id,
+        title: item.title || item.name,
+        media_type: item.media_type || 'movie',
+        release_date: item.release_date || item.first_air_date || null,
+        job: item.character ? `Cast (${item.character})` : 'Starring',
+        character: item.character,
+        genre_ids: item.genre_ids || [],
+      });
+    });
+
+    // Return all credits without year cutoff so unannounced items (dash year) populate
+    return NextResponse.json(allCredits);
+  } catch (error) {
+    console.error('Error fetching creative credits:', error);
+    return NextResponse.json({ error: 'Failed to fetch credits' }, { status: 500 });
+  }
 }

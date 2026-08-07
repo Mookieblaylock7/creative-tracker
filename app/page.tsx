@@ -260,7 +260,6 @@ export default function Home() {
       const res = await fetch(`/api/creative?id=${person.id}`);
       const credits = await res.json();
 
-      // Ensure all future / upcoming credits map properly without year truncation
       const newProjects: ProjectUpdate[] = (credits || []).map((c: any) => {
         const dateInfo = parseReleaseDate(c.release_date || c.first_air_date);
         const title = c.title || c.name || 'Untitled Project';
@@ -269,7 +268,7 @@ export default function Home() {
         const isDoc = isDocumentaryProject(title, assignedRole, c.genre_ids);
 
         return {
-          id: `${person.id}-${c.id}-${assignedRole.replace(/\s+/g, '')}`,
+          id: `${person.id}-${c.id}-${assignedRole.replace(/[^a-zA-Z0-9]/g, '')}`,
           tmdbId: c.id,
           creativeName: person.name,
           projectTitle: title,
@@ -419,7 +418,6 @@ export default function Home() {
     });
   };
 
-  // Filter main timeline updates
   const filteredUpdates = updates.filter((item) => {
     if (!includeMovies && item.mediaType === 'movie') return false;
     if (!includeTV && item.mediaType === 'tv') return false;
@@ -473,6 +471,7 @@ export default function Home() {
 
   const sortedGroupedUpdates = Array.from(groupedMap.values()).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
+  // Multi-Role Credit Formatter (Dir., Writer, Exec Producer, Starring)
   const formatCreditsLine = (creatives: Array<{ name: string; role: string }>) => {
     const creativeRoleMap = new Map<string, string[]>();
 
@@ -558,7 +557,7 @@ export default function Home() {
     );
   }
 
-  // Selected Person Projects for Modal
+  // Selected Person Projects for Dedicated Modal
   const personProjects = selectedPersonModal
     ? updates.filter((u) => u.creativeName.toLowerCase() === selectedPersonModal.name.toLowerCase())
     : [];
@@ -568,7 +567,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.4</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.5</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -600,7 +599,7 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Restored Clean Filter Toolbar: Roles Left, Media Right */}
+        {/* Filter Toolbar */}
         <div className="bg-[#161b22] border border-[#30363d] p-3 flex flex-wrap justify-between items-center gap-4">
           <div className="flex flex-wrap items-center gap-3 text-[11px]">
             <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1 mr-1">
@@ -878,7 +877,7 @@ export default function Home() {
             <div className="max-h-96 overflow-y-auto divide-y divide-[#30363d]/50 pr-1 space-y-3">
               {personProjects.length === 0 ? (
                 <div className="py-8 text-center text-[#8b949e]">
-                  No logged projects found for {selectedPersonModal.name}. Try following them again to fetch latest credits!
+                  No logged projects found for {selectedPersonModal.name}. Try unfollowing and refollowing them to fetch all unannounced projects!
                 </div>
               ) : (
                 personProjects.map((proj) => (
