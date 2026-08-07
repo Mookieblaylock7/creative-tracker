@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText } from 'lucide-react';
+import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -193,12 +193,15 @@ export default function Home() {
       const newProjects: ProjectUpdate[] = (credits || []).map((c: any) => {
         const dateInfo = parseReleaseDate(c.release_date || c.first_air_date);
         
-        // TMDB Genre ID 99 = Documentary
+        const titleLower = (c.title || c.name || '').toLowerCase();
+        const roleLower = (c.job || '').toLowerCase();
+
         const isDocumentary = 
           (c.genre_ids && c.genre_ids.includes(99)) ||
           (c.genres && c.genres.some((g: any) => g.id === 99 || g.name?.toLowerCase().includes('doc'))) ||
-          (c.title && c.title.toLowerCase().includes('docu')) ||
-          (c.job && c.job.toLowerCase().includes('docu'));
+          titleLower.includes('docu') ||
+          titleLower.includes('elegy') ||
+          roleLower.includes('docu');
 
         return {
           id: `${person.id}-${c.id}`,
@@ -242,6 +245,11 @@ export default function Home() {
     } catch (err) {
       console.error('Error fetching credits:', err);
     }
+  };
+
+  const deleteProject = async (id: string) => {
+    setUpdates((prev) => prev.filter((p) => p.id !== id));
+    await supabase.from('tracked_projects').delete().eq('id', id);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -299,7 +307,11 @@ export default function Home() {
   const filteredUpdates = updates.filter((item) => {
     if (!includeMovies && item.mediaType === 'movie') return false;
     if (!includeTV && item.mediaType === 'tv') return false;
-    if (!includeDocs && item.isDoc) return false;
+
+    const titleLower = item.projectTitle.toLowerCase();
+    const isDocByTitle = item.isDoc || titleLower.includes('elegy') || titleLower.includes('docu');
+
+    if (!includeDocs && isDocByTitle) return false;
 
     if (roleFilter === 'Directing' && !item.role.toLowerCase().includes('director') && !item.role.toLowerCase().includes('directing')) return false;
     if (roleFilter === 'Writing' && !item.role.toLowerCase().includes('writer') && !item.role.toLowerCase().includes('writing')) return false;
@@ -369,7 +381,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.2</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v1.3</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             <button
@@ -534,7 +546,7 @@ export default function Home() {
                       idx === 0 || sortedUpdates[idx - 1].releaseDateHeader !== item.releaseDateHeader;
 
                     return (
-                      <div key={`${item.id}-${idx}`} className="space-y-2">
+                      <div key={`${item.id}-${idx}`} className="space-y-2 group">
                         {showDateHeader && (
                           <div className="pt-2">
                             <div className="text-right text-white font-bold text-xs tracking-wide uppercase">
@@ -544,35 +556,39 @@ export default function Home() {
                           </div>
                         )}
 
-                        <div className="leading-tight py-0.5">
-                          <span className="font-bold text-[#79c0ff]">{item.creativeName}</span>
-                          <span className="text-white font-normal"> - </span>
-                          <a
-                            href={`https://www.themoviedb.org/${item.mediaType}/${item.tmdbId}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[#a5d6ff] font-normal hover:underline"
-                          >
-                            {item.projectTitle}
-                          </a>
+                        <div className="leading-tight py-0.5 flex justify-between items-start">
+                          <div>
+                            <span className="font-bold text-[#79c0ff]">{item.creativeName}</span>
+                            <span className="text-white font-normal"> - </span>
+                            <a
+                              href={`https://www.themoviedb.org/${item.mediaType}/${item.tmdbId}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[#a5d6ff] font-normal hover:underline"
+                            >
+                              {item.projectTitle}
+                            </a>
 
-                          <div className="text-[11px] text-[#8b949e] mt-0.5">
-                            <span>{item.role}</span>
-                            <span className="mx-1">·</span>
-                            <span className="text-amber-400/90">{item.status}</span>
-                            {item.director && (
-                              <>
-                                <span className="mx-1">·</span>
-                                <span>Dir: {item.director}</span>
-                              </>
-                            )}
-                            {item.isDoc && (
-                              <>
-                                <span className="mx-1">·</span>
-                                <span className="text-blue-400 font-bold">DOC</span>
-                              </>
-                            )}
+                            <div className="text-[11px] text-[#8b949e] mt-0.5">
+                              <span>{item.role}</span>
+                              <span className="mx-1">·</span>
+                              <span className="text-amber-400/90">{item.status}</span>
+                              {item.director && (
+                                <>
+                                  <span className="mx-1">·</span>
+                                  <span>Dir: {item.director}</span>
+                                </>
+                              )}
+                            </div>
                           </div>
+
+                          <button
+                            onClick={() => deleteProject(item.id)}
+                            title="Remove from timeline"
+                            className="opacity-0 group-hover:opacity-100 text-[#8b949e] hover:text-red-400 p-1 transition-opacity"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
                     );
