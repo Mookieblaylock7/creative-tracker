@@ -81,6 +81,15 @@ export default function Home() {
   const [importProgress, setImportProgress] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
 
+  // Helper: Get today's ISO date string (YYYY-MM-DD)
+  const getTodayISO = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -147,6 +156,7 @@ export default function Home() {
 
   const loadSavedData = async (userId: string) => {
     setLoading(true);
+    const todayISO = getTodayISO();
     try {
       const { data: savedCreatives } = await supabase
         .from('followed_creatives')
@@ -174,19 +184,24 @@ export default function Home() {
 
       if (savedProjects) {
         setUpdates(
-          savedProjects.map((p) => ({
-            id: p.id,
-            tmdbId: p.tmdb_id,
-            creativeName: p.creative_name,
-            projectTitle: p.project_title,
-            role: p.role,
-            mediaType: p.media_type,
-            releaseDateHeader: p.release_date_header,
-            sortKey: p.sort_key,
-            status: p.status,
-            director: p.director,
-            isDoc: isDocumentaryProject(p.project_title, p.role),
-          }))
+          savedProjects
+            .filter((p) => {
+              if (!p.sort_key || p.sort_key.startsWith('9999')) return true; // Keep unannounced
+              return p.sort_key >= todayISO; // Dynamic Cutoff: Today or later
+            })
+            .map((p) => ({
+              id: p.id,
+              tmdbId: p.tmdb_id,
+              creativeName: p.creative_name,
+              projectTitle: p.project_title,
+              role: p.role,
+              mediaType: p.media_type,
+              releaseDateHeader: p.release_date_header,
+              sortKey: p.sort_key,
+              status: p.status,
+              director: p.director,
+              isDoc: isDocumentaryProject(p.project_title, p.role),
+            }))
         );
       }
     } catch (err) {
@@ -260,14 +275,19 @@ export default function Home() {
       const res = await fetch(`/api/creative?id=${person.id}`);
       const credits = await res.json();
 
+      const todayISO = getTodayISO();
       const newProjects: ProjectUpdate[] = [];
 
       (credits || []).forEach((c: any) => {
-        const dateInfo = parseReleaseDate(c.release_date || c.first_air_date);
+        const rawDate = c.release_date || c.first_air_date;
+
+        // Dynamic Cutoff: Keep UNANNOUNCED (no date) OR released today/future
+        if (rawDate && rawDate < todayISO) return;
+
+        const dateInfo = parseReleaseDate(rawDate);
         const title = c.title || c.name || 'Untitled Project';
         const rawRole = c.job || (c.character ? `Cast (${c.character})` : department);
 
-        // Sanitize role for unique ID to prevent overwriting
         const cleanRoleTag = rawRole.replace(/[^a-zA-Z0-9]/g, '');
         const uniqueId = `${person.id}-${c.id}-${cleanRoleTag}`;
 
@@ -282,7 +302,7 @@ export default function Home() {
           mediaType: c.media_type || 'movie',
           releaseDateHeader: dateInfo.header,
           sortKey: dateInfo.sortKey,
-          status: c.release_date || c.first_air_date ? 'Announced' : 'In Development',
+          status: rawDate ? 'Announced' : 'In Development',
           director: c.director || null,
           isDoc,
         });
@@ -502,7 +522,6 @@ export default function Home() {
 
     const entries: string[] = [];
     creativeRoleMap.forEach((roles, name) => {
-      // Priority sorting: Dir. -> Writer -> Exec Producer -> Producer -> Starring
       const order = ['Dir.', 'Writer', 'Exec Producer', 'Producer', 'Starring'];
       roles.sort((a, b) => order.indexOf(a) - order.indexOf(b));
 
@@ -577,7 +596,7 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.6</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v3.8</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
             {lastImportBatchIds.length > 0 && (
@@ -887,7 +906,7 @@ export default function Home() {
             <div className="max-h-96 overflow-y-auto divide-y divide-[#30363d]/50 pr-1 space-y-3">
               {personProjects.length === 0 ? (
                 <div className="py-8 text-center text-[#8b949e]">
-                  No logged projects found for {selectedPersonModal.name}. Unfollow and refollow them to refresh their credits!
+                  No logged projects found for {selectedPersonModal.name}.
                 </div>
               ) : (
                 personProjects.map((proj) => (
