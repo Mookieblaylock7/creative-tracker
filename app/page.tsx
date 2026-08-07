@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye, Users } from 'lucide-react';
+import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye, Users, Bell, BellOff, Mail } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -54,6 +54,11 @@ export default function Home() {
   const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Email Digest & Reminders
+  const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
+  const [emailFrequency, setEmailFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'none'>('weekly');
+  const [activeReminders, setActiveReminders] = useState<number[]>([]);
+
   // Details Cache (tmdbId -> { genres, topCast })
   const [detailsCache, setDetailsCache] = useState<Record<number, { genres: string[]; topCast: string[] }>>({});
 
@@ -95,8 +100,10 @@ export default function Home() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) loadSavedData(session.user.id);
-      else setLoading(false);
+      if (session) {
+        loadSavedData(session.user.id);
+        loadUserPreferences(session.user.id);
+      } else setLoading(false);
     });
 
     const savedBatch = localStorage.getItem('last_import_batch');
@@ -108,8 +115,10 @@ export default function Home() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) loadSavedData(session.user.id);
-      else {
+      if (session) {
+        loadSavedData(session.user.id);
+        loadUserPreferences(session.user.id);
+      } else {
         setFollowed([]);
         setUpdates([]);
         setLoading(false);
@@ -118,6 +127,61 @@ export default function Home() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const loadUserPreferences = async (userId: string) => {
+    try {
+      const { data: pref } = await supabase
+        .from('user_email_preferences')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (pref) setEmailFrequency(pref.frequency);
+
+      const { data: rems } = await supabase
+        .from('movie_reminders')
+        .select('tmdb_id')
+        .eq('user_id', userId);
+
+      if (rems) setActiveReminders(rems.map((r) => r.tmdb_id));
+    } catch (e) {}
+  };
+
+  const saveEmailFrequency = async (freq: 'daily' | 'weekly' | 'monthly' | 'none') => {
+    setEmailFrequency(freq);
+    if (!session?.user) return;
+
+    await supabase.from('user_email_preferences').upsert({
+      user_id: session.user.id,
+      email: session.user.email,
+      frequency: freq,
+    });
+  };
+
+  const toggleMovieReminder = async (item: GroupedProject) => {
+    if (!session?.user) return;
+
+    const isReminded = activeReminders.includes(item.tmdbId);
+
+    if (isReminded) {
+      setActiveReminders((prev) => prev.filter((id) => id !== item.tmdbId));
+      await supabase
+        .from('movie_reminders')
+        .delete()
+        .eq('user_id', session.user.id)
+        .eq('tmdb_id', item.tmdbId);
+    } else {
+      setActiveReminders((prev) => [...prev, item.tmdbId]);
+      await supabase.from('movie_reminders').insert({
+        user_id: session.user.id,
+        user_email: session.user.email,
+        tmdb_id: item.tmdbId,
+        project_title: item.projectTitle,
+        release_date: item.sortKey.startsWith('9999') ? '2026-12-31' : item.sortKey,
+        reminder_type: 'both',
+      });
+    }
+  };
 
   const parseReleaseDate = (rawDate?: string) => {
     if (!rawDate) {
@@ -453,7 +517,6 @@ export default function Home() {
     if (!includeMovies && group.mediaType === 'movie') return false;
     if (!includeTV && group.mediaType === 'tv') return false;
 
-    // LIVE DOCUMENTARY FILTERING
     const details = detailsCache[group.tmdbId] || { genres: [] };
     const titleLower = group.projectTitle.toLowerCase();
     const isDoc =
@@ -465,7 +528,6 @@ export default function Home() {
 
     if (!includeDocs && isDoc) return false;
 
-    // STRICT ROLE FILTERING MATCHED TO CREATIVE'S PRIMARY DEPARTMENT
     const matchesRole = group.creatives.some((c) => {
       const creativeObj = followed.find((f) => f.name.toLowerCase() === c.name.toLowerCase());
       const primaryDept = (creativeObj?.department || '').toLowerCase();
@@ -477,7 +539,6 @@ export default function Home() {
       const isProducing = r.includes('producer') && !isExecProducing;
       const isActing = r.startsWith('cast') || r.includes('actor') || r.includes('starring') || r.includes('self');
 
-      // If they are primarily a Director and acting in something, don't show when Acting checkbox is enabled
       if (isActing && primaryDept.includes('directing') && !isDirecting) {
         return showDirecting && showActing;
       }
@@ -518,7 +579,6 @@ export default function Home() {
     return a.sortKey.localeCompare(b.sortKey);
   });
 
-  // Automatically fetch & cache genres and top cast for visible projects
   useEffect(() => {
     if (sortedGroupedUpdates.length === 0) return;
 
@@ -650,7 +710,6 @@ export default function Home() {
     );
   }
 
-  // Deduplicated Person Projects Modal Grouping
   const personRawProjects = selectedPersonModal
     ? updates.filter((u) => u.creativeName.toLowerCase() === selectedPersonModal.name.toLowerCase())
     : [];
@@ -679,16 +738,23 @@ export default function Home() {
       <div className="max-w-5xl mx-auto space-y-6">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
           <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v4.9</span>
+            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v5.0</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
+            <button
+              onClick={() => setIsAlertsModalOpen(true)}
+              className="bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-amber-400 px-2.5 py-1 flex items-center gap-1.5 font-bold transition-colors"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              Email Alerts ({emailFrequency})
+            </button>
             {lastImportBatchIds.length > 0 && (
               <button
                 onClick={undoLastImport}
                 className="bg-amber-900/40 hover:bg-amber-800/60 border border-amber-600/50 text-amber-200 px-2.5 py-1 flex items-center gap-1.5 font-bold transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                Undo Last Import ({lastImportBatchIds.length})
+                Undo Import ({lastImportBatchIds.length})
               </button>
             )}
             <button
@@ -937,6 +1003,7 @@ export default function Home() {
 
                     const formattedCredits = formatCreditsLine(item.creatives);
                     const details = detailsCache[item.tmdbId] || { genres: [], topCast: [] };
+                    const isBellActive = activeReminders.includes(item.tmdbId);
 
                     return (
                       <div key={`${item.tmdbId}-${idx}`} className="space-y-3 group">
@@ -983,15 +1050,30 @@ export default function Home() {
                             )}
                           </div>
 
-                          <button
-                            onClick={() => {
-                              item.creatives.forEach((c) => deleteProject(c.updateId));
-                            }}
-                            title="Remove project from timeline"
-                            className="opacity-0 group-hover:opacity-100 text-[#8b949e] hover:text-red-400 p-1 transition-opacity"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            {/* Bell Reminder Toggle */}
+                            <button
+                              onClick={() => toggleMovieReminder(item)}
+                              title={isBellActive ? "Remove Email Reminder" : "Get 1 week & 1 month Email Reminders"}
+                              className={`p-1 transition-colors ${
+                                isBellActive
+                                  ? 'text-amber-400 hover:text-amber-300'
+                                  : 'text-[#8b949e]/50 hover:text-amber-400'
+                              }`}
+                            >
+                              <Bell className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                item.creatives.forEach((c) => deleteProject(c.updateId));
+                              }}
+                              title="Remove project from timeline"
+                              className="opacity-0 group-hover:opacity-100 text-[#8b949e] hover:text-red-400 p-1 transition-opacity"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -1002,6 +1084,56 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Email Alerts Preferences Modal */}
+      {isAlertsModalOpen && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative">
+            <button
+              onClick={() => setIsAlertsModalOpen(false)}
+              className="absolute top-3 right-3 text-[#8b949e] hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h2 className="text-sm font-bold text-white uppercase tracking-wide border-b border-[#30363d] pb-2 flex items-center gap-2">
+              <Mail className="w-4 h-4 text-amber-400" /> Email Alert Preferences
+            </h2>
+
+            <div className="space-y-3">
+              <p className="text-[#8b949e] text-[11px]">
+                Choose how often you want email digests detailing new TMDB updates for people you follow (release dates announced, new projects added, cast updates):
+              </p>
+
+              <div className="space-y-2 pt-1">
+                {(['daily', 'weekly', 'monthly', 'none'] as const).map((freq) => (
+                  <label
+                    key={freq}
+                    className={`flex items-center justify-between p-2 border cursor-pointer font-bold capitalize text-xs ${
+                      emailFrequency === freq
+                        ? 'border-[#58a6ff] bg-[#1f242d] text-white'
+                        : 'border-[#30363d] bg-[#0d1117] text-[#8b949e] hover:text-white'
+                    }`}
+                  >
+                    <span>{freq} Digest</span>
+                    <input
+                      type="radio"
+                      name="email_freq"
+                      checked={emailFrequency === freq}
+                      onChange={() => saveEmailFrequency(freq)}
+                      className="accent-[#58a6ff]"
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="pt-2 border-t border-[#30363d] text-[11px] text-[#8b949e]">
+                <strong className="text-white">Movie Bell Reminders:</strong> You can also click the <Bell className="w-3 h-3 inline text-amber-400 mx-0.5" /> icon next to any upcoming movie to receive instant emails 1 month and 1 week prior to its release date!
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Single Person Dedicated View Modal */}
       {selectedPersonModal && (
