@@ -775,106 +775,59 @@ export default function Home() {
       </header>
 
         {/* Filter Toolbar */}
-        <div className="bg-[#161b22] border border-[#30363d] p-3 flex flex-wrap justify-between items-center gap-4">
-          <div className="flex flex-wrap items-center gap-3 text-[11px]">
-            <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1 mr-1">
-              <Filter className="w-3 h-3 text-[#58a6ff]" /> Roles:
-            </span>
-            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-              <input
-                type="checkbox"
-                checked={showDirecting}
-                onChange={(e) => setShowDirecting(e.target.checked)}
-                className="accent-[#58a6ff]"
-              />
-              Directing
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-              <input
-                type="checkbox"
-                checked={showWriting}
-                onChange={(e) => setShowWriting(e.target.checked)}
-                className="accent-[#58a6ff]"
-              />
-              Writing
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-              <input
-                type="checkbox"
-                checked={showActing}
-                onChange={(e) => setShowActing(e.target.checked)}
-                className="accent-[#58a6ff]"
-              />
-              Acting
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-              <input
-                type="checkbox"
-                checked={showProducing}
-                onChange={(e) => setShowProducing(e.target.checked)}
-                className="accent-[#58a6ff]"
-              />
-              Producing
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-              <input
-                type="checkbox"
-                checked={showExecProducing}
-                onChange={(e) => setShowExecProducing(e.target.checked)}
-                className="accent-[#58a6ff]"
-              />
-              Exec Producing
-            </label>
-          </div>
+        <div className="bg-[#161b22] border border-[#30363d] p-3 rounded-lg text-xs">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1 mb-1">
+                <Filter className="w-3 h-3 text-[#58a6ff]" /> Roles:
+              </span>
+              <div className="flex flex-col gap-1.5 text-[11px]">
+                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+                  <input type="checkbox" checked={showDirecting} onChange={(e) => setShowDirecting(e.target.checked)} className="accent-[#58a6ff]" />
+                  Directing
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+                  <input type="checkbox" checked={showWriting} onChange={(e) => setShowWriting(e.target.checked)} className="accent-[#58a6ff]" />
+                  Writing
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+                  <input type="checkbox" checked={showActing} onChange={(e) => setShowActing(e.target.checked)} className="accent-[#58a6ff]" />
+                  Acting
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+                  <input type="checkbox" checked={showProducing} onChange={(e) => setShowProducing(e.target.checked)} className="accent-[#58a6ff]" />
+                  Producing
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+                  <input type="checkbox" checked={showExecProducing} onChange={(e) => setShowExecProducing(e.target.checked)} className="accent-[#58a6ff]" />
+                  Exec Producing
+                </label>
+              </div>
+            </div>
 
-          <div className="flex items-center gap-3 text-[11px]">
-            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-              <input
-                type="checkbox"
-                checked={includeMovies}
-                onChange={(e) => setIncludeMovies(e.target.checked)}
-                className="accent-[#58a6ff]"
-              />
-              <Film className="w-3 h-3 text-[#58a6ff]" /> Movies
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-              <input
-                type="checkbox"
-                checked={includeTV}
-                onChange={(e) => setIncludeTV(e.target.checked)}
-                className="accent-[#58a6ff]"
-              />
-              <Tv className="w-3 h-3 text-[#58a6ff]" /> TV Shows
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-              <input
-                type="checkbox"
-                checked={includeDocs}
-                onChange={(e) => setIncludeDocs(e.target.checked)}
-                className="accent-[#58a6ff]"
-              />
-              <FileText className="w-3 h-3 text-[#58a6ff]" /> Docs
-            </label>
+            <div className="space-y-1.5 border-l border-[#30363d] pl-4">
+              <span className="text-[10px] font-bold uppercase text-[#8b949e] block mb-1">
+                Mediums:
+              </span>
+              <div className="flex flex-col gap-1.5 text-[11px]">
+                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+                  <input type="checkbox" checked={includeMovies} onChange={(e) => setIncludeMovies(e.target.checked)} className="accent-[#58a6ff]" />
+                  Movies
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+                  <input type="checkbox" checked={includeTV} onChange={(e) => setIncludeTV(e.target.checked)} className="accent-[#58a6ff]" />
+                  TV Shows
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
+                  <input type="checkbox" checked={includeDocs} onChange={(e) => setIncludeDocs(e.target.checked)} className="accent-[#58a6ff]" />
+                  Docs
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Mobile View Switcher */}
-        <div className="flex md:hidden bg-[#161b22] border border-[#30363d] p-1 rounded-lg mb-4">
-          <button
-            onClick={() => setMobileTab("feed")}
-            className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${mobileTab === "feed" ? "bg-[#21262d] text-white" : "text-[#8b949e]"}`}
-          >
-            Timeline Feed
-          </button>
-          <button
-            onClick={() => setMobileTab("people")}
-            className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${mobileTab === "people" ? "bg-[#21262d] text-white" : "text-[#8b949e]"}`}
-          >
-            People You Follow
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-6">
             <section className="bg-[#161b22] border border-[#30363d] p-3 space-y-3">
               <h2 className="font-bold text-white uppercase text-xs tracking-wide border-b border-[#30363d] pb-1.5 flex justify-between">
@@ -953,7 +906,7 @@ export default function Home() {
               )}
             </section>
 
-            <section className="bg-[#161b22] border border-[#30363d] p-3 space-y-2">
+            <section className={`bg-[#161b22] border border-[#30363d] p-3 space-y-2 ${mobileTab === "feed" ? "hidden md:block" : "block"}`}>
               <div className="border-b border-[#30363d] pb-1.5 flex justify-between items-center">
                 <h2 className="font-bold text-white uppercase text-xs tracking-wide">
                   People You Follow <span className="text-[#8b949e]">[{followed.length}]</span>
