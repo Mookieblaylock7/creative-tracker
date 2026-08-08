@@ -737,9 +737,9 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="w-full max-w-5xl mx-auto space-y-6 px-3 sm:px-6 overflow-x-hidden">
         <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
-          <h1 className="text-lg font-bold text-white tracking-wider uppercase flex items-center gap-2">
+          <h1 className="text-lg font-bold text-white tracking-wider uppercase flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
             MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v5.1</span>
           </h1>
           <div className="flex items-center gap-3 text-[#8b949e] text-xs">
