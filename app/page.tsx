@@ -775,7 +775,7 @@ export default function Home() {
         <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.13</span>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.15</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#8b949e]">
             <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
@@ -790,6 +790,20 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={async () => {
+              if (navigator.share) {
+                try { await navigator.share({ title: "My Film People", url: "https://myfilmpeople.app" }); } catch (e) {}
+              } else {
+                await navigator.clipboard.writeText("https://myfilmpeople.app");
+                alert("Link copied!");
+              }
+            }}
+            className="px-2.5 py-1.5 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-[#58a6ff] text-[10px] uppercase font-bold rounded flex items-center gap-1.5 transition-colors"
+          >
+            Share App
+          </button>
           <button
             onClick={() => setIsAlertsModalOpen(true)}
             className="flex-1 sm:flex-none h-9 px-3 bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] rounded text-xs font-semibold text-[#d29922] flex items-center justify-center gap-1.5 transition-colors"
@@ -1005,7 +1019,40 @@ export default function Home() {
               <div className="bg-[#414853] px-3 py-2 text-white font-bold text-sm tracking-wide flex justify-between items-center">
                 <span>Upcoming Projects Timeline</span>
                 <span className="text-xs text-[#8b949e] font-normal">{sortedGroupedUpdates.length} projects</span>
-              </div>
+              
+          <div className="flex items-center gap-2">
+            <select
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+              className="bg-[#0d1117] border border-[#30363d] text-white text-[11px] rounded px-2 py-1 outline-none focus:border-[#58a6ff]"
+            >
+              <option value="ALL">All Months</option>
+              <option value="01">January</option>
+              <option value="02">February</option>
+              <option value="03">March</option>
+              <option value="04">April</option>
+              <option value="05">May</option>
+              <option value="06">June</option>
+              <option value="07">July</option>
+              <option value="08">August</option>
+              <option value="09">September</option>
+              <option value="10">October</option>
+              <option value="11">November</option>
+              <option value="12">December</option>
+            </select>
+            <select
+              value={filterYear}
+              onChange={(e) => setFilterYear(e.target.value)}
+              className="bg-[#0d1117] border border-[#30363d] text-white text-[11px] rounded px-2 py-1 outline-none focus:border-[#58a6ff]"
+            >
+              <option value="ALL">All Years</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+              <option value="2028">2028</option>
+              <option value="2029">2029</option>
+            </select>
+          </div>
+        </div>
 
               <div className="p-3 space-y-6">
                 {loading ? (
