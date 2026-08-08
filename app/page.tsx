@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye, Users, Bell, BellOff, Mail } from 'lucide-react';
+import { Share2, Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye, Users, Bell, BellOff, Mail } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -55,6 +55,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   // Email Digest & Reminders
+  const [copiedShare, setCopiedShare] = useState(false);
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"feed" | "people">("feed");
   const [emailFrequency, setEmailFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'none'>('weekly');
@@ -691,6 +692,36 @@ export default function Home() {
             {authMessage && <div className="text-amber-400 text-[11px] font-bold">{authMessage}</div>}
 
             <button
+              type="button"
+              onClick={async () => {
+                const shareData = {
+                  title: "My Film People",
+                  text: "Track upcoming movies, TV shows, and docs from your favorite film industry creatives!",
+                  url: "https://myfilmpeople.app"
+                };
+                if (navigator.share) {
+                  try { await navigator.share(shareData); } catch (err) {}
+                } else {
+                  await navigator.clipboard.writeText("https://myfilmpeople.app");
+                  setCopiedShare(true);
+                  setTimeout(() => setCopiedShare(false), 2000);
+                }
+              }}
+              className="px-2.5 py-1.5 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-white text-[10px] uppercase font-bold rounded flex items-center gap-1.5 transition-colors"
+            >
+              {copiedShare ? (
+                <>
+                  <Check className="w-3 h-3 text-green-400" />
+                  <span className="text-green-400">Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-3 h-3 text-[#58a6ff]" />
+                  <span>Share</span>
+                </>
+              )}
+            </button>
+            <button
               type="submit"
               className="w-full bg-[#238636] hover:bg-[#2ea043] border border-[#30363d] text-white py-1.5 font-bold uppercase transition-colors text-xs"
             >
@@ -742,7 +773,7 @@ export default function Home() {
         <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.7</span>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.8</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#8b949e]">
             <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
