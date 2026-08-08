@@ -784,92 +784,89 @@ export default function Home() {
   const personProjects = Array.from(personGroupedMap.values());
 
   return (
-    <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
-      <div className="w-full max-w-5xl mx-auto space-y-6 px-3 sm:px-6 overflow-x-hidden">
-        <header className="pb-4 mb-6 border-b border-[#30363d]">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-                <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.67</span>
-              </div>
-              <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
+    <main className="min-h-screen bg-[#0b0e14] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
+      <div className="w-full max-w-6xl mx-auto space-y-5">
+        
+        {/* Header Section */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
+              <span className="text-[10px] font-mono px-2 py-0.5 bg-[#161b22] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.46</span>
             </div>
-            
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={async () => {
-                  if (navigator.share) {
-                    try { await navigator.share({ title: "My Film People", url: "https://myfilmpeople.app" }); } catch (e) {}
-                  } else {
-                    await navigator.clipboard.writeText("https://myfilmpeople.app");
-                    alert("Link copied!");
-                  }
-                }}
-                className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#58a6ff] text-[#58a6ff] rounded-xl w-20 h-20 transition-all shadow-sm"
-              >
-                <span className="text-xl mb-1">
-                  <svg className="w-4 h-4 text-[#8b949e] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                  </svg>
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider">Share</span>
-              </button>
+            <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
+          </div>
+          
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={async () => {
+                if (navigator.share) {
+                  try { await navigator.share({ title: "My Film People", url: "https://myfilmpeople.app" }); } catch (e) {}
+                } else {
+                  await navigator.clipboard.writeText("https://myfilmpeople.app");
+                  alert("Link copied!");
+                }
+              }}
+              className="flex items-center gap-2 px-3 py-2 bg-[#12171f] border border-[#30363d] hover:border-[#58a6ff] text-white rounded-md transition-all text-xs font-bold"
+            >
+              <svg className="w-4 h-4 text-[#8b949e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              <span>SHARE</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setIsAlertsModalOpen(true)}
-                className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#d29922] text-[#d29922] rounded-xl w-20 h-20 transition-all shadow-sm"
-              >
-                <span className="text-xl mb-1">
-                  <svg className="w-4 h-4 text-[#e3b341] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                  </svg>
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider">Alerts</span>
-              </button>
+            <button
+              type="button"
+              onClick={() => setIsAlertsModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-[#12171f] border border-[#30363d] hover:border-[#d29922] text-[#e3b341] rounded-md transition-all text-xs font-bold"
+            >
+              <Mail className="w-4 h-4 text-[#e3b341]" />
+              <span>ALERTS</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setIsImportOpen(true)}
-                className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#8b949e] text-[#c9d1d9] rounded-xl w-20 h-20 transition-all shadow-sm"
-              >
-                <span className="text-xl mb-1">
-                  <span className="flex items-center gap-0.5 mb-1">
-                    <span className="w-2 h-2 rounded-full bg-[#ff8000]"></span>
-                    <span className="w-2 h-2 rounded-full bg-[#00e054]"></span>
-                    <span className="w-2 h-2 rounded-full bg-[#40bcf4]"></span>
-                  </span>
-                </span>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-center leading-tight">IMPORT FROM LETTERBOXD</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsImportOpen(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-[#12171f] border border-[#30363d] hover:border-[#8b949e] text-white rounded-md transition-all text-xs font-bold"
+            >
+              <span className="flex items-center gap-0.5">
+                <span className="w-2 h-2 rounded-full bg-[#ff8000]"></span>
+                <span className="w-2 h-2 rounded-full bg-[#00e054]"></span>
+                <span className="w-2 h-2 rounded-full bg-[#40bcf4]"></span>
+              </span>
+              <span className="text-[10px] font-bold tracking-wider">IMPORT FROM LETTERBOXD</span>
+            </button>
           </div>
         </header>
 
-        {/* FIND YOUR FILM PEOPLE - Search Bar with Solid Blue Button */}
-        <section className="bg-[#161b22] border border-[#30363d] rounded-lg p-3.5 space-y-2 mb-3">
-          <div className="flex justify-between items-center text-[10px] uppercase font-extrabold tracking-wider">
-            <span className="text-white font-bold">FIND YOUR FILM PEOPLE</span>
-            <span className="text-[11px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming projects)</span>
+        {/* FIND YOUR FILM PEOPLE - Mockup Search Box */}
+        <section className="bg-[#12171f] border border-[#21262d] rounded-md p-4 space-y-3">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-white font-extrabold uppercase tracking-wide">FIND YOUR FILM PEOPLE</span>
+            <span className="text-[#8b949e] text-xs font-normal">(Click on a person to view their upcoming projects)</span>
           </div>
-          <form onSubmit={handleSearch} className="flex gap-2">
+          
+          <form onSubmit={handleSearch} className="flex w-full items-stretch rounded-md overflow-hidden border border-[#30363d] bg-[#0b0e14]">
+            <div className="flex items-center pl-3 pr-1 text-[#8b949e]">
+              <Search className="w-4 h-4" />
+            </div>
             <input
               type="text"
-              placeholder="e.g. Tom Cruise..."
+              placeholder="Search for an actor, director, writer, or other creator..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 bg-[#0d1117] border border-[#30363d] px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:border-[#58a6ff]"
+              className="flex-1 bg-transparent px-2 py-3 text-xs text-white focus:outline-none placeholder-[#8b949e]"
             />
             <button
               type="submit"
-              className="px-4 bg-[#1f6beb] hover:bg-[#388bfd] text-white font-semibold rounded-lg flex items-center justify-center transition-colors gap-1.5 text-xs"
+              className="px-8 bg-[#1f6beb] hover:bg-[#388bfd] text-white font-bold text-xs transition-colors flex items-center justify-center"
             >
-              <Search className="w-3.5 h-3.5" />
-              <span>Search</span>
+              Search
             </button>
           </form>
+
+          <p className="text-[#8b949e] text-xs">Follow people to build your personalized upcoming-project timeline.</p>
 
           {/* Search Results Display List */}
           {searchResults && searchResults.length > 0 && (
@@ -922,7 +919,7 @@ export default function Home() {
         </section>
 
         {/* Mobile Tab Switcher */}
-        <div className="md:hidden flex bg-[#161b22] border border-[#30363d] p-1 rounded-lg my-3">
+        <div className="md:hidden flex bg-[#12171f] border border-[#30363d] p-1 rounded-lg my-2">
           <button
             type="button"
             onClick={() => setActiveTab("feed")}
@@ -939,26 +936,22 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Modern Filter Section - Horizontal Role and Medium Pill/Card Rows */}
-        <div className="bg-[#161b22] border border-[#30363d] p-4 rounded-xl text-xs space-y-4">
+        {/* FILTER YOUR TIMELINE - Mockup Filters Box */}
+        <section className="bg-[#12171f] border border-[#21262d] rounded-md p-4 space-y-4">
+          <h2 className="text-white font-extrabold uppercase tracking-wide text-xs">FILTER YOUR TIMELINE</h2>
+          
           {/* ROLE Section */}
-          <div>
-            <span className="text-[10px] font-extrabold uppercase text-[#8b949e] flex items-center gap-1.5 tracking-wider mb-2.5">
-              <Filter className="w-3.5 h-3.5 text-[#58a6ff]" /> ROLE
-            </span>
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <span className="text-[#8b949e] font-extrabold text-[11px] tracking-wider uppercase min-w-[70px]">ROLE</span>
+            <div className="flex flex-wrap gap-2.5">
               <button
                 type="button"
                 onClick={() => setShowDirecting(!showDirecting)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
-                  showDirecting
-                    ? 'bg-[#1c2128] border-[#30363d] text-white'
-                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                className={`flex items-center gap-2 px-3 py-2 rounded border text-xs transition-colors ${
+                  showDirecting ? 'bg-[#0b0e14] border-[#1f6beb] text-white' : 'bg-[#0b0e14] border-[#30363d] text-[#8b949e] hover:text-white'
                 }`}
               >
-                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
-                  showDirecting ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
-                }`}>
+                <div className={`w-4 h-4 rounded flex items-center justify-center ${showDirecting ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d]'}`}>
                   {showDirecting && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
                 <span>Directing</span>
@@ -967,15 +960,11 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setShowWriting(!showWriting)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
-                  showWriting
-                    ? 'bg-[#1c2128] border-[#30363d] text-white'
-                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                className={`flex items-center gap-2 px-3 py-2 rounded border text-xs transition-colors ${
+                  showWriting ? 'bg-[#0b0e14] border-[#1f6beb] text-white' : 'bg-[#0b0e14] border-[#30363d] text-[#8b949e] hover:text-white'
                 }`}
               >
-                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
-                  showWriting ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
-                }`}>
+                <div className={`w-4 h-4 rounded flex items-center justify-center ${showWriting ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d]'}`}>
                   {showWriting && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
                 <span>Writing</span>
@@ -984,15 +973,11 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setShowActing(!showActing)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
-                  showActing
-                    ? 'bg-[#1c2128] border-[#30363d] text-white'
-                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                className={`flex items-center gap-2 px-3 py-2 rounded border text-xs transition-colors ${
+                  showActing ? 'bg-[#0b0e14] border-[#1f6beb] text-white' : 'bg-[#0b0e14] border-[#30363d] text-[#8b949e] hover:text-white'
                 }`}
               >
-                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
-                  showActing ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
-                }`}>
+                <div className={`w-4 h-4 rounded flex items-center justify-center ${showActing ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d]'}`}>
                   {showActing && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
                 <span>Acting</span>
@@ -1001,15 +986,11 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setShowProducing(!showProducing)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
-                  showProducing
-                    ? 'bg-[#1c2128] border-[#30363d] text-white'
-                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                className={`flex items-center gap-2 px-3 py-2 rounded border text-xs transition-colors ${
+                  showProducing ? 'bg-[#0b0e14] border-[#1f6beb] text-white' : 'bg-[#0b0e14] border-[#30363d] text-[#8b949e] hover:text-white'
                 }`}
               >
-                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
-                  showProducing ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
-                }`}>
+                <div className={`w-4 h-4 rounded flex items-center justify-center ${showProducing ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d]'}`}>
                   {showProducing && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
                 <span>Producing</span>
@@ -1018,15 +999,11 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setShowExecProducing(!showExecProducing)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
-                  showExecProducing
-                    ? 'bg-[#1c2128] border-[#30363d] text-white'
-                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                className={`flex items-center gap-2 px-3 py-2 rounded border text-xs transition-colors ${
+                  showExecProducing ? 'bg-[#0b0e14] border-[#1f6beb] text-white' : 'bg-[#0b0e14] border-[#30363d] text-[#8b949e] hover:text-white'
                 }`}
               >
-                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
-                  showExecProducing ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
-                }`}>
+                <div className={`w-4 h-4 rounded flex items-center justify-center ${showExecProducing ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d]'}`}>
                   {showExecProducing && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
                 <span>Exec Producing</span>
@@ -1035,23 +1012,17 @@ export default function Home() {
           </div>
 
           {/* MEDIUM Section */}
-          <div className="pt-3 border-t border-[#30363d]">
-            <span className="text-[10px] font-extrabold uppercase text-[#8b949e] block tracking-wider mb-2.5">
-              MEDIUM
-            </span>
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
+            <span className="text-[#8b949e] font-extrabold text-[11px] tracking-wider uppercase min-w-[70px]">MEDIUM</span>
+            <div className="flex flex-wrap gap-2.5">
               <button
                 type="button"
                 onClick={() => setIncludeMovies(!includeMovies)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
-                  includeMovies
-                    ? 'bg-[#1c2128] border-[#30363d] text-white'
-                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                className={`flex items-center gap-2 px-3 py-2 rounded border text-xs transition-colors ${
+                  includeMovies ? 'bg-[#0b0e14] border-[#1f6beb] text-white' : 'bg-[#0b0e14] border-[#30363d] text-[#8b949e] hover:text-white'
                 }`}
               >
-                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
-                  includeMovies ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
-                }`}>
+                <div className={`w-4 h-4 rounded flex items-center justify-center ${includeMovies ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d]'}`}>
                   {includeMovies && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
                 <span>Movies</span>
@@ -1060,15 +1031,11 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setIncludeTV(!includeTV)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
-                  includeTV
-                    ? 'bg-[#1c2128] border-[#30363d] text-white'
-                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                className={`flex items-center gap-2 px-3 py-2 rounded border text-xs transition-colors ${
+                  includeTV ? 'bg-[#0b0e14] border-[#1f6beb] text-white' : 'bg-[#0b0e14] border-[#30363d] text-[#8b949e] hover:text-white'
                 }`}
               >
-                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
-                  includeTV ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
-                }`}>
+                <div className={`w-4 h-4 rounded flex items-center justify-center ${includeTV ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d]'}`}>
                   {includeTV && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
                 <span>TV Shows</span>
@@ -1077,79 +1044,78 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setIncludeDocs(!includeDocs)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
-                  includeDocs
-                    ? 'bg-[#1c2128] border-[#30363d] text-white'
-                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                className={`flex items-center gap-2 px-3 py-2 rounded border text-xs transition-colors ${
+                  includeDocs ? 'bg-[#0b0e14] border-[#1f6beb] text-white' : 'bg-[#0b0e14] border-[#30363d] text-[#8b949e] hover:text-white'
                 }`}
               >
-                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
-                  includeDocs ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
-                }`}>
+                <div className={`w-4 h-4 rounded flex items-center justify-center ${includeDocs ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d]'}`}>
                   {includeDocs && <Check className="w-3 h-3 stroke-[3]" />}
                 </div>
                 <span>Docs</span>
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Main Columns Container */}
-        <div className="flex flex-col gap-4 w-full">
-          <div className="space-y-6">
-            <section className={`bg-[#161b22] border border-[#30363d] p-3 space-y-2 ${activeTab === "feed" ? "hidden md:block" : "block"}`}>
-              <div className="border-b border-[#30363d] pb-1.5 flex justify-between items-center">
-                <h2 className="font-bold text-white uppercase text-xs tracking-wide">
-                  People You Follow <span className="text-[#8b949e]">[{followed.length}]</span>
-                </h2>
+        {/* Main Content Layout: Side-by-Side Grid for Desktop (People Left, Timeline Right) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+          
+          {/* LEFT SIDEBAR: People You Follow */}
+          <aside className={`bg-[#12171f] border border-[#21262d] rounded-md p-3.5 space-y-2 ${activeTab === "feed" ? "hidden md:block" : "block"}`}>
+            <div className="border-b border-[#21262d] pb-2 flex justify-between items-center">
+              <h2 className="font-bold text-white uppercase text-xs tracking-wide">
+                People You Follow <span className="text-[#8b949e]">[{followed.length}]</span>
+              </h2>
 
-                {followed.length > 0 && (
-                  <button
-                    onClick={clearAllFollowed}
-                    className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-wider"
+              {followed.length > 0 && (
+                <button
+                  onClick={clearAllFollowed}
+                  className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase tracking-wider"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
+
+            <ul className="divide-y divide-[#21262d]/50 max-h-[600px] overflow-y-auto">
+              {followed.map((person) => (
+                <li key={person.id} className="py-2 flex justify-between items-center group px-1">
+                  <div
+                    onClick={() => setSelectedPersonModal(person)}
+                    className="cursor-pointer group-hover:text-[#58a6ff]"
                   >
-                    Clear All
-                  </button>
-                )}
-              </div>
-
-              <ul className="divide-y divide-[#30363d]/50 max-h-96 overflow-y-auto">
-                {followed.map((person) => (
-                  <li key={person.id} className="py-1.5 flex justify-between items-center group px-1">
-                    <div
-                      onClick={() => setSelectedPersonModal(person)}
-                      className="cursor-pointer group-hover:text-[#58a6ff]"
-                    >
-                      <div className="font-bold text-[#58a6ff] flex items-center gap-1.5">
-                        {person.name}
-                        <Eye className="w-3 h-3 opacity-0 group-hover:opacity-100 text-[#8b949e] transition-opacity" />
-                      </div>
-                      <div className="text-[10px] text-[#8b949e]">{person.department}</div>
+                    <div className="font-bold text-[#58a6ff] flex items-center gap-1.5 text-xs">
+                      {person.name}
+                      <Eye className="w-3 h-3 opacity-0 group-hover:opacity-100 text-[#8b949e] transition-opacity" />
                     </div>
-                    <button
-                      onClick={() => unfollowPerson(person.id)}
-                      title={`Unfollow ${person.name}`}
-                      className="opacity-0 group-hover:opacity-100 text-[#8b949e] hover:text-red-400 p-1 transition-opacity"
-                    >
-                      <UserMinus className="w-3.5 h-3.5" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </div>
+                    <div className="text-[10px] text-[#8b949e]">{person.department}</div>
+                  </div>
+                  <button
+                    onClick={() => unfollowPerson(person.id)}
+                    title={`Unfollow ${person.name}`}
+                    className="opacity-0 group-hover:opacity-100 text-[#8b949e] hover:text-red-400 p-1 transition-opacity"
+                  >
+                    <UserMinus className="w-3.5 h-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </aside>
 
-          <div className={`md:col-span-2 ${activeTab === "people" ? "hidden md:block" : "block"}`}>
-            <div className="w-full bg-[#161c23] border border-[#2d3542]">
-              <div className="bg-[#414853] px-3 py-2 text-white font-bold text-sm tracking-wide flex justify-between items-center">
-                <span>Upcoming Projects Timeline</span>
-                <span className="text-xs text-[#8b949e] font-normal">{sortedGroupedUpdates.length} projects</span>
+          {/* RIGHT MAIN AREA: Upcoming Projects Timeline */}
+          <main className={`md:col-span-2 ${activeTab === "people" ? "hidden md:block" : "block"}`}>
+            <div className="w-full bg-[#12171f] border border-[#21262d] rounded-md">
+              <div className="bg-[#1c222d] px-3.5 py-2.5 text-white font-bold text-xs tracking-wide flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#21262d]">
+                <div className="flex items-center gap-2">
+                  <span>Upcoming Projects Timeline</span>
+                  <span className="text-xs text-[#8b949e] font-normal">({sortedGroupedUpdates.length} projects)</span>
+                </div>
               
                 <div className="flex items-center gap-2">
                   <select
                     value={filterMonth}
                     onChange={(e) => setFilterMonth(e.target.value)}
-                    className="bg-[#0d1117] border border-[#30363d] text-white text-[11px] rounded px-2 py-1 outline-none focus:border-[#58a6ff]"
+                    className="bg-[#0b0e14] border border-[#30363d] text-white text-[11px] rounded px-2 py-1 outline-none focus:border-[#58a6ff]"
                   >
                     <option value="ALL">All Months</option>
                     <option value="01">January</option>
@@ -1168,7 +1134,7 @@ export default function Home() {
                   <select
                     value={filterYear}
                     onChange={(e) => setFilterYear(e.target.value)}
-                    className="bg-[#0d1117] border border-[#30363d] text-white text-[11px] rounded px-2 py-1 outline-none focus:border-[#58a6ff]"
+                    className="bg-[#0b0e14] border border-[#30363d] text-white text-[11px] rounded px-2 py-1 outline-none focus:border-[#58a6ff]"
                   >
                     <option value="ALL">All Years</option>
                     <option value="IN_DEV">In Development / TBD</option>
@@ -1180,7 +1146,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="p-3 space-y-6">
+              <div className="p-4 space-y-6">
                 {loading ? (
                   <div className="py-8 text-center text-[#8b949e]">Loading timeline...</div>
                 ) : sortedGroupedUpdates.length === 0 ? (
@@ -1199,11 +1165,11 @@ export default function Home() {
                     return (
                       <div key={`${item.tmdbId}-${idx}`} className="space-y-3 group">
                         {showDateHeader && (
-                          <div className="pt-4">
+                          <div className="pt-2">
                             <div className="text-right text-white font-bold text-xs tracking-wide uppercase">
                               {item.releaseDateHeader}
                             </div>
-                            <div className="border-b border-[#58a6ff]/40 mt-1" />
+                            <div className="border-b border-[#1f6beb]/40 mt-1" />
                           </div>
                         )}
 
@@ -1220,7 +1186,7 @@ export default function Home() {
                                   {item.projectTitle}
                                 </a>
                                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                                  <span className="text-xs font-semibold text-white/90 bg-[#21262d] border border-[#30363d] px-2 py-0.5 rounded-md">
+                                  <span className="text-xs font-semibold text-white/90 bg-[#161b22] border border-[#30363d] px-2 py-0.5 rounded-md">
                                     {formattedCredits}
                                   </span>
                                   <span className="text-[10px] uppercase font-bold tracking-wider text-[#8b949e]">
@@ -1282,14 +1248,14 @@ export default function Home() {
                 )}
               </div>
             </div>
-          </div>
+          </main>
         </div>
       </div>
 
       {/* Email Alerts Preferences Modal */}
       {isAlertsModalOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative rounded-lg">
+          <div className="bg-[#12171f] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative rounded-lg">
             <button
               onClick={() => setIsAlertsModalOpen(false)}
               className="absolute top-3 right-3 text-[#8b949e] hover:text-white"
@@ -1303,7 +1269,7 @@ export default function Home() {
 
             <div className="space-y-3">
               <p className="text-[#8b949e] text-[11px]">
-                Choose how often you want email digests detailing new TMDB updates for people you follow (release dates announced, new projects added, cast updates):
+                Choose how often you want email digests detailing new TMDB updates for people you follow:
               </p>
 
               <div className="space-y-2 pt-1">
@@ -1312,8 +1278,8 @@ export default function Home() {
                     key={freq}
                     className={`flex items-center justify-between p-2 border cursor-pointer font-bold capitalize text-xs rounded ${
                       emailFrequency === freq
-                        ? 'border-[#58a6ff] bg-[#1f242d] text-white'
-                        : 'border-[#30363d] bg-[#0d1117] text-[#8b949e] hover:text-white'
+                        ? 'border-[#58a6ff] bg-[#1c222d] text-white'
+                        : 'border-[#30363d] bg-[#0b0e14] text-[#8b949e] hover:text-white'
                     }`}
                   >
                     <span>{freq} Digest</span>
@@ -1327,10 +1293,6 @@ export default function Home() {
                   </label>
                 ))}
               </div>
-
-              <div className="pt-2 border-t border-[#30363d] text-[11px] text-[#8b949e]">
-                <strong className="text-white">Movie Bell Reminders:</strong> You can also click the <Bell className="w-3 h-3 inline text-amber-400 mx-0.5" /> icon next to any upcoming movie to receive instant emails 1 month and 1 week prior to its release date!
-              </div>
             </div>
           </div>
         </div>
@@ -1339,7 +1301,7 @@ export default function Home() {
       {/* Single Person Dedicated View Modal */}
       {selectedPersonModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-xl p-5 space-y-4 relative rounded-lg">
+          <div className="bg-[#12171f] border border-[#30363d] w-full max-w-xl p-5 space-y-4 relative rounded-lg">
             <button
               onClick={() => setSelectedPersonModal(null)}
               className="absolute top-3 right-3 text-[#8b949e] hover:text-white"
@@ -1393,7 +1355,7 @@ export default function Home() {
       {/* Import Modal */}
       {isImportOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative rounded-lg">
+          <div className="bg-[#12171f] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative rounded-lg">
             <button
               onClick={() => setIsImportOpen(false)}
               className="absolute top-3 right-3 text-[#8b949e] hover:text-white"
@@ -1413,7 +1375,7 @@ export default function Home() {
                 <select
                   value={importRatingThreshold}
                   onChange={(e) => setImportRatingThreshold(parseFloat(e.target.value))}
-                  className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2 py-1 text-xs rounded"
+                  className="w-full bg-[#0b0e14] border border-[#30363d] text-white px-2 py-1 text-xs rounded"
                 >
                   <option value={5.0}>5 Stars Only</option>
                   <option value={4.5}>4.5 Stars & Above</option>
@@ -1465,26 +1427,17 @@ export default function Home() {
               </div>
 
               <div className="pt-3">
-                <div className="bg-[#161b22] border border-[#30363d] rounded p-3 my-2 text-[11px] text-[#8b949e] space-y-1.5">
-                  <div className="font-bold text-white uppercase text-[10px] tracking-wider">How to get your ratings.csv file:</div>
-                  <ol className="list-decimal list-inside space-y-1 text-[#c9d1d9] pl-1">
-                    <li>Log into <strong className="text-white">Letterboxd</strong> (web or mobile) and open <strong className="text-white">Settings</strong></li>
-                    <li>Go to the <strong className="text-white">Data</strong> tab and click <strong className="text-white">Export Your Data</strong></li>
-                    <li>Open the downloaded zip folder, locate <strong className="text-[#58a6ff]">ratings.csv</strong>, and select it below</li>
-                  </ol>
-                </div>
-                <label className="block text-[10px] text-[#8b949e] uppercase font-bold mb-1 mt-3">Select ratings.csv file:</label>
                 <input
                   type="file"
                   accept=".csv"
                   disabled={isImporting}
                   onChange={handleFileUpload}
-                  className="w-full text-xs text-[#8b949e] file:bg-[#21262d] file:border file:border-[#30363d] file:text-white file:px-3 file:py-1 file:mr-3 file:font-bold file:rounded cursor-pointer"
+                  className="w-full text-xs text-[#8b949e] file:bg-[#1c222d] file:border file:border-[#30363d] file:text-white file:px-3 file:py-1 file:mr-3 file:font-bold file:rounded cursor-pointer"
                 />
               </div>
 
               {importProgress && (
-                <div className="p-2 bg-[#0d1117] border border-[#30363d] text-[#58a6ff] text-[11px] font-mono rounded">
+                <div className="p-2 bg-[#0b0e14] border border-[#30363d] text-[#58a6ff] text-[11px] font-mono rounded">
                   {importProgress}
                 </div>
               )}
