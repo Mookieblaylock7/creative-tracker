@@ -771,75 +771,53 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
       <div className="w-full max-w-5xl mx-auto space-y-6 px-3 sm:px-6 overflow-x-hidden">
-        <header className="flex flex-col gap-3 pb-4 border-b border-[#30363d]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#30363d] mb-6">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.19</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={async () => {
-                if (navigator.share) {
-                  try { await navigator.share({ title: "My Film People", url: "https://myfilmpeople.app" }); } catch (e) {}
-                } else {
-                  await navigator.clipboard.writeText("https://myfilmpeople.app");
-                  alert("Link copied!");
-                }
-              }}
-              className="px-3 py-1.5 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-[#58a6ff] text-xs font-bold uppercase rounded flex items-center gap-1.5 transition-colors"
-            >
-              Share App
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsAlertsModalOpen(true)}
-              className="px-3 py-1.5 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-[#d29922] text-xs font-bold uppercase rounded flex items-center gap-1.5 transition-colors"
-            >
-              ✉️ Email Alerts
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsImportOpen(true)}
-              className="px-3 py-1.5 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-[#8b949e] text-xs font-bold uppercase rounded flex items-center gap-1.5 transition-colors"
-            >
-              ⬆ Import Letterboxd
-            </button>
-          </div>
-        </div>
+        <header className="pb-4 mb-6 border-b border-[#30363d]">
+  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <div className="flex items-center gap-2">
+        <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.20</span>
+      </div>
+      <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
+    </div>
+    
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={async () => {
+          if (navigator.share) {
+            try { await navigator.share({ title: "My Film People", url: "https://myfilmpeople.app" }); } catch (e) {}
+          } else {
+            await navigator.clipboard.writeText("https://myfilmpeople.app");
+            alert("Link copied!");
+          }
+        }}
+        className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#58a6ff] text-[#58a6ff] rounded-xl w-20 h-20 transition-all shadow-sm"
+      >
+        <span className="text-xl mb-1">🔗</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider">Share</span>
+      </button>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={async () => {
-              if (navigator.share) {
-                try { await navigator.share({ title: "My Film People", url: "https://myfilmpeople.app" }); } catch (e) {}
-              } else {
-                await navigator.clipboard.writeText("https://myfilmpeople.app");
-                alert("Link copied!");
-              }
-            }}
-            className="px-2.5 py-1.5 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-[#58a6ff] text-[10px] uppercase font-bold rounded flex items-center gap-1.5 transition-colors"
-          >
-            Share App
-          </button>
-          <button
-            onClick={() => setIsAlertsModalOpen(true)}
-            className="flex-1 sm:flex-none h-9 px-3 bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] rounded text-xs font-semibold text-[#d29922] flex items-center justify-center gap-1.5 transition-colors"
-          >
-            <Mail className="w-3.5 h-3.5" />
-            Email Alerts ({emailFrequency})
-          </button>
-          <button
-            onClick={() => setIsImportOpen(true)}
-            className="flex-1 sm:flex-none h-9 px-3 bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] rounded text-xs font-semibold text-[#58a6ff] flex items-center justify-center gap-1.5 transition-colors"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            Import Letterboxd
-          </button>
-        </div>
-      </header>
+      <button
+        type="button"
+        onClick={() => setIsAlertsModalOpen(true)}
+        className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#d29922] text-[#d29922] rounded-xl w-20 h-20 transition-all shadow-sm"
+      >
+        <span className="text-xl mb-1">✉️</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider">Alerts</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setIsImportOpen(true)}
+        className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#8b949e] text-[#c9d1d9] rounded-xl w-20 h-20 transition-all shadow-sm"
+      >
+        <span className="text-xl mb-1">⬆️</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider">Import</span>
+      </button>
+    </div>
+  </div>
+</header>
 
         {/* FIND FILM PEOPLE - Single Top Search Bar */}
         <section className="bg-[#161b22] border border-[#30363d] rounded-lg p-3.5 space-y-2 mb-3">
