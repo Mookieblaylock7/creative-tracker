@@ -521,7 +521,25 @@ export default function Home() {
     // Date Filtering (Month & Year)
     const dateStr = String(group.releaseDateHeader || group.sortKey || "").toLowerCase();
 
-    const matchesYear = filterYear === "ALL" || dateStr.includes(String(filterYear).toLowerCase());
+    const matchesYear = (() => {
+      if (filterYear === "ALL") return true;
+      if (filterYear === "IN_DEV") {
+        const header = String(group.releaseDateHeader || "").toLowerCase();
+        const statusStr = String(group.status || "").toLowerCase();
+        const sort = String(group.sortKey || "").toLowerCase();
+        
+        const hasSpecificYear = /\b(202[4-9]|203[0-9])\b/.test(header);
+        const isDev = 
+          !hasSpecificYear ||
+          header.includes("dev") || header.includes("tbd") || header.includes("tba") || 
+          header.includes("announced") || header.includes("rumor") || header.includes("unknown") ||
+          statusStr.includes("dev") || statusStr.includes("tbd") || statusStr.includes("announced") || 
+          statusStr.includes("in production") || statusStr.includes("pre-production") || sort.includes("9999");
+
+        return isDev;
+      }
+      return dateStr.includes(String(filterYear).toLowerCase());
+    })();
     const matchesMonth = filterMonth === "ALL" || (() => {
       if (!dateStr) return false;
       const fM = filterMonth.toLowerCase();
@@ -804,7 +822,7 @@ export default function Home() {
     <div>
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.41</span>
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.42</span>
       </div>
       <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
     </div>
@@ -850,7 +868,7 @@ export default function Home() {
         {/* FIND FILM PEOPLE <span className="text-[11px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming projects)</span> <span className="text-[10px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming releases)</span> <span className="text-[10px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming releases)</span> - Single Top Search Bar */}
         <section className="bg-[#161b22] border border-[#30363d] rounded-lg p-3.5 space-y-2 mb-3">
           <div className="flex justify-between items-center text-[10px] uppercase font-extrabold tracking-wider">
-            <span className="text-white font-bold">FIND FILM PEOPLE</span>
+            <span className="text-white font-bold">FIND FILM PEOPLE</span><span className="text-[11px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming projects)</span>
             <span className="text-[#8b949e]">TMDB</span>
           </div>
           <form onSubmit={(e) => { e.preventDefault(); handleSearch(e); }} className="flex gap-2">
