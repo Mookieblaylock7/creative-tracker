@@ -49,6 +49,8 @@ export default function Home() {
   const [authMessage, setAuthMessage] = useState('');
 
   const [query, setQuery] = useState('');
+  const [filterMonth, setFilterMonth] = useState<string>("ALL");
+  const [filterYear, setFilterYear] = useState<string>("ALL");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [followed, setFollowed] = useState<Creative[]>([]);
   const [updates, setUpdates] = useState<ProjectUpdate[]>([]);
@@ -773,7 +775,7 @@ export default function Home() {
         <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.12</span>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.13</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#8b949e]">
             <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
