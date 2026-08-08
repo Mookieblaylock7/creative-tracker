@@ -72,28 +72,28 @@ export default function Home() {
   const [modalProjects, setModalProjects] = useState<any[]>([]);
   const [isModalLoading, setIsModalLoading] = useState<boolean>(false);
 
-  // Role Filters
+  // Role Filters (Default: Directing and Acting selected)
   const [showDirecting, setShowDirecting] = useState(true);
-  const [showWriting, setShowWriting] = useState(true);
+  const [showWriting, setShowWriting] = useState(false);
   const [showActing, setShowActing] = useState(true);
-  const [showCinematography, setShowCinematography] = useState(true);
-  const [showMusic, setShowMusic] = useState(true);
+  const [showCinematography, setShowCinematography] = useState(false);
+  const [showMusic, setShowMusic] = useState(false);
   const [showProducing, setShowProducing] = useState(false);
   const [showExecProducing, setShowExecProducing] = useState(false);
 
-  // Medium Filters
+  // Medium Filters (Default: Movies selected, TV and Docs off)
   const [includeDocs, setIncludeDocs] = useState(false);
   const [includeMovies, setIncludeMovies] = useState(true);
-  const [includeTV, setIncludeTV] = useState(true);
+  const [includeTV, setIncludeTV] = useState(false);
 
-  // Import Modal States
+  // Import Modal States (Default: Directors, Lead Actors, and Skip Docs checked)
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [importRatingThreshold, setImportRatingThreshold] = useState<number>(4.5);
   const [importDirectors, setImportDirectors] = useState(true);
-  const [importWriters, setImportWriters] = useState(true);
-  const [importCast, setImportCast] = useState(false);
-  const [importCinematographers, setImportCinematographers] = useState(true);
-  const [importComposers, setImportComposers] = useState(true);
+  const [importWriters, setImportWriters] = useState(false);
+  const [importCast, setImportCast] = useState(true);
+  const [importCinematographers, setImportCinematographers] = useState(false);
+  const [importComposers, setImportComposers] = useState(false);
   const [importSkipDocs, setImportSkipDocs] = useState(true);
   const [importProgress, setImportProgress] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
@@ -1493,6 +1493,15 @@ export default function Home() {
                   <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
                     <input
                       type="checkbox"
+                      checked={importCast}
+                      onChange={(e) => setImportCast(e.target.checked)}
+                      className="accent-[#58a6ff]"
+                    />
+                    Lead Actors / Cast
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
+                    <input
+                      type="checkbox"
                       checked={importWriters}
                       onChange={(e) => setImportWriters(e.target.checked)}
                       className="accent-[#58a6ff]"
@@ -1508,7 +1517,7 @@ export default function Home() {
                     />
                     Cinematographers
                   </label>
-                  <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer col-span-2">
                     <input
                       type="checkbox"
                       checked={importComposers}
@@ -1516,15 +1525,6 @@ export default function Home() {
                       className="accent-[#58a6ff]"
                     />
                     Composers / Music
-                  </label>
-                  <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer col-span-2">
-                    <input
-                      type="checkbox"
-                      checked={importCast}
-                      onChange={(e) => setImportCast(e.target.checked)}
-                      className="accent-[#58a6ff]"
-                    />
-                    Lead Actors / Cast
                   </label>
                 </div>
               </div>
