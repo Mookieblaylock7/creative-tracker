@@ -772,19 +772,39 @@ export default function Home() {
     <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
       <div className="w-full max-w-5xl mx-auto space-y-6 px-3 sm:px-6 overflow-x-hidden">
         <header className="flex flex-col gap-3 pb-4 border-b border-[#30363d]">
-        <div className="flex items-center justify-between w-full">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#30363d] mb-6">
+          <div className="flex items-center gap-3">
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.16</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.17</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-[#8b949e]">
-            <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => supabase.auth.signOut()}
-              className="p-1.5 hover:bg-[#21262d] text-[#8b949e] hover:text-white rounded transition-colors"
-              title="Log Out"
+              type="button"
+              onClick={async () => {
+                if (navigator.share) {
+                  try { await navigator.share({ title: "My Film People", url: "https://myfilmpeople.app" }); } catch (e) {}
+                } else {
+                  await navigator.clipboard.writeText("https://myfilmpeople.app");
+                  alert("Link copied!");
+                }
+              }}
+              className="px-3 py-1.5 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-[#58a6ff] text-xs font-bold uppercase rounded flex items-center gap-1.5 transition-colors"
             >
-              <LogOut className="w-4 h-4" />
+              Share App
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAlertsModalOpen(true)}
+              className="px-3 py-1.5 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-[#d29922] text-xs font-bold uppercase rounded flex items-center gap-1.5 transition-colors"
+            >
+              ✉️ Email Alerts
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsImportOpen(true)}
+              className="px-3 py-1.5 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-[#8b949e] text-xs font-bold uppercase rounded flex items-center gap-1.5 transition-colors"
+            >
+              ⬆ Import Letterboxd
             </button>
           </div>
         </div>
