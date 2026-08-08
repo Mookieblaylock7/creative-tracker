@@ -519,14 +519,36 @@ export default function Home() {
 
   const filteredGroupedUpdates = Array.from(groupedMap.values()).filter((group) => {
     // Date Filtering (Month & Year)
-    const pDate = String(group.releaseDate || group.date || group.release_date || group.year || group.dateFormatted || "").toLowerCase();
-    const matchesYear = filterYear === "ALL" || pDate.includes(String(filterYear).toLowerCase());
+    const g = group as any;
+    const firstUp = Array.isArray(g.updates) && g.updates.length > 0 ? g.updates[0] : {};
+    const dateStr = String(
+      g.releaseDate || g.date || g.release_date || g.year || g.dateFormatted || g.title ||
+      firstUp.releaseDate || firstUp.date || firstUp.release_date || firstUp.year || firstUp.dateFormatted || ""
+    ).toLowerCase();
+
+    const matchesYear = filterYear === "ALL" || dateStr.includes(String(filterYear).toLowerCase());
     const matchesMonth = filterMonth === "ALL" || (() => {
-      if (!pDate) return false;
-      const mNum = parseInt(filterMonth, 10);
+      if (!dateStr) return false;
+      const fM = filterMonth.toLowerCase();
       const mNames = ["january","february","march","april","may","june","july","august","september","october","november","december"];
       const mShort = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-      return pDate.includes("-" + filterMonth + "-") || pDate.includes(mNames[mNum - 1]) || pDate.includes(mShort[mNum - 1]);
+
+      if (dateStr.includes(fM)) return true;
+
+      const nameIdx = mNames.indexOf(fM);
+      if (nameIdx !== -1) {
+        const mNum = nameIdx + 1;
+        const padded = String(mNum).padStart(2, "0");
+        return dateStr.includes("-" + padded + "-") || dateStr.includes("-" + mNum + "-") || dateStr.includes(mShort[nameIdx]);
+      }
+
+      const parsedNum = parseInt(filterMonth, 10);
+      if (!isNaN(parsedNum) && parsedNum >= 1 && parsedNum <= 12) {
+        const padded = String(parsedNum).padStart(2, "0");
+        return dateStr.includes("-" + padded + "-") || dateStr.includes(mNames[parsedNum - 1]) || dateStr.includes(mShort[parsedNum - 1]);
+      }
+
+      return false;
     })();
     if (!matchesYear || !matchesMonth) return false;
     if (!includeMovies && group.mediaType === 'movie') return false;
@@ -787,7 +809,7 @@ export default function Home() {
     <div>
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.28</span>
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.36</span>
       </div>
       <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
     </div>
