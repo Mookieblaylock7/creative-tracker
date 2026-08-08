@@ -816,7 +816,7 @@ export default function Home() {
     <div>
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.60</span>
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.63</span>
       </div>
       <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
     </div>
@@ -1006,7 +1006,7 @@ export default function Home() {
           </div>
         </div>
 
-<div className="flex flex-col sm:flex-row gap-6 w-full">
+<div className="flex flex-col gap-4 w-full">
           <div className="space-y-6">
             
 
