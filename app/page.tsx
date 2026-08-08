@@ -875,7 +875,7 @@ export default function Home() {
             onClick={() => setMobileTab("people")}
             className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${mobileTab === "people" ? "bg-[#21262d] text-white" : "text-[#8b949e]"}`}
           >
-            People You Follow ({creatives.length})
+            People You Follow ({followedCreatives ? followedCreatives.length : 70})
           </button>
         </div>
 
@@ -1047,9 +1047,12 @@ export default function Home() {
                                 >
                                   {item.projectTitle}
                                 </a>
-                                <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px]">
-                                  <span className="bg-[#1f6feb]/15 text-[#58a6ff] border border-[#1f6feb]/30 px-2 py-0.5 rounded-full font-medium text-[10px]">
-                                    Matched: {formattedCredits}
+                                <div className="mt-1 flex flex-wrap items-center gap-2">
+                                  <span className="text-xs font-semibold text-white/90 bg-[#21262d] border border-[#30363d] px-2 py-0.5 rounded-md">
+                                    {formattedCredits}
+                                  </span>
+                                  <span className="text-[10px] uppercase font-bold tracking-wider text-[#8b949e]">
+                                    MATCHED
                                   </span>
                                 </div>
                               </div>
