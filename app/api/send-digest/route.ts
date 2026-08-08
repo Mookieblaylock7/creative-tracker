@@ -3,6 +3,17 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+interface DigestItem {
+  title: string;
+  matchedCredits?: string;
+  status?: string;
+  releaseDate?: string;
+  oldStatus?: string;
+  newStatus?: string;
+  oldDate?: string;
+  newDate?: string;
+}
+
 export async function POST(request: Request) {
   try {
     const { to, newProjects = [], statusChanges = [], dateChanges = [] } = await request.json();
@@ -14,10 +25,10 @@ export async function POST(request: Request) {
         <h3 style="color: #58a6ff; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; border-bottom: 1px solid #30363d; padding-bottom: 4px;">
           🆕 New Projects Announced
         </h3>
-        ${newProjects.map((item) => `
+        ${(newProjects as DigestItem[]).map((item) => `
           <div style="background-color: #161b22; border: 1px solid #30363d; padding: 12px; border-radius: 6px; margin-bottom: 8px;">
             <div style="font-weight: bold; color: #ffffff; font-size: 15px;">${item.title}</div>
-            <div style="color: #79c0ff; font-size: 12px; margin-top: 4px;">Matched: ${item.matchedCredits}</div>
+            <div style="color: #79c0ff; font-size: 12px; margin-top: 4px;">Matched: ${item.matchedCredits || ""}</div>
             <div style="color: #8b949e; font-size: 12px; margin-top: 2px;">Status: <span style="color: #d29922;">${item.status || "Announced"}</span> · Release: ${item.releaseDate || "TBA"}</div>
           </div>
         `).join("")}
@@ -29,10 +40,10 @@ export async function POST(request: Request) {
         <h3 style="color: #d29922; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; border-bottom: 1px solid #30363d; padding-bottom: 4px;">
           🎬 Production Status Changes
         </h3>
-        ${statusChanges.map((item) => `
+        ${(statusChanges as DigestItem[]).map((item) => `
           <div style="background-color: #161b22; border: 1px solid #30363d; padding: 12px; border-radius: 6px; margin-bottom: 8px;">
             <div style="font-weight: bold; color: #ffffff; font-size: 15px;">${item.title}</div>
-            <div style="color: #79c0ff; font-size: 12px; margin-top: 4px;">Matched: ${item.matchedCredits}</div>
+            <div style="color: #79c0ff; font-size: 12px; margin-top: 4px;">Matched: ${item.matchedCredits || ""}</div>
             <div style="color: #8b949e; font-size: 12px; margin-top: 2px;">Changed: <span style="color: #f85149;">${item.oldStatus}</span> ➔ <span style="color: #3fb950; font-weight: bold;">${item.newStatus}</span></div>
           </div>
         `).join("")}
@@ -44,10 +55,10 @@ export async function POST(request: Request) {
         <h3 style="color: #a5d6ff; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; border-bottom: 1px solid #30363d; padding-bottom: 4px;">
           📅 Release Date Moves
         </h3>
-        ${dateChanges.map((item) => `
+        ${(dateChanges as DigestItem[]).map((item) => `
           <div style="background-color: #161b22; border: 1px solid #30363d; padding: 12px; border-radius: 6px; margin-bottom: 8px;">
             <div style="font-weight: bold; color: #ffffff; font-size: 15px;">${item.title}</div>
-            <div style="color: #79c0ff; font-size: 12px; margin-top: 4px;">Matched: ${item.matchedCredits}</div>
+            <div style="color: #79c0ff; font-size: 12px; margin-top: 4px;">Matched: ${item.matchedCredits || ""}</div>
             <div style="color: #8b949e; font-size: 12px; margin-top: 2px;">Moved: <span style="color: #8b949e; text-decoration: line-through;">${item.oldDate}</span> ➔ <span style="color: #58a6ff; font-weight: bold;">${item.newDate}</span></div>
           </div>
         `).join("")}
@@ -77,7 +88,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, data });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error?.message || "Unknown error" }, { status: 500 });
   }
 }
