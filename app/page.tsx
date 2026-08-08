@@ -773,7 +773,7 @@ export default function Home() {
         <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.8</span>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.9</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#8b949e]">
             <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
@@ -882,7 +882,7 @@ export default function Home() {
         
 
         {/* Tab Switcher */}
-        <div className="flex bg-[#161b22] border border-[#30363d] p-1 rounded-lg my-3">
+        <div className="md:hidden flex bg-[#161b22] border border-[#30363d] p-1 rounded-lg my-3">
           <button
             type="button"
             onClick={() => setActiveTab("feed")}
