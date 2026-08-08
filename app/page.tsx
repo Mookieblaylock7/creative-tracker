@@ -776,7 +776,7 @@ export default function Home() {
     <div>
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.20</span>
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.22</span>
       </div>
       <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
     </div>
@@ -819,7 +819,7 @@ export default function Home() {
   </div>
 </header>
 
-        {/* FIND FILM PEOPLE - Single Top Search Bar */}
+        {/* FIND FILM PEOPLE <span className="text-[10px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming releases)</span> - Single Top Search Bar */}
         <section className="bg-[#161b22] border border-[#30363d] rounded-lg p-3.5 space-y-2 mb-3">
           <div className="flex justify-between items-center text-[10px] uppercase font-extrabold tracking-wider">
             <span className="text-white font-bold">FIND FILM PEOPLE</span>
