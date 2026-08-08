@@ -1020,19 +1020,22 @@ export default function Home() {
                         <div className="leading-relaxed py-1 flex justify-between items-start">
                           <div>
                             {/* Unified Single Link for Credit & Movie Title */}
-                            <a
-                              href={`https://www.themoviedb.org/${item.mediaType}/${item.tmdbId}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="font-bold text-[#79c0ff] hover:text-[#a5d6ff] hover:underline text-sm block"
-                            >
-                              {item.projectTitle}
-                            </a>
-                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                              <span className="text-[10px] text-[#8b949e] uppercase font-bold tracking-wider mr-0.5">Matched:</span>
-                              <span className="bg-[#1f6feb]/20 text-[#58a6ff] border border-[#1f6feb]/40 px-1.5 py-0.5 rounded text-[11px] font-medium">
-                                {formattedCredits}
-                              </span>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full">
+                              <div>
+                                <a
+                                  href={`https://www.themoviedb.org/${item.mediaType}/${item.tmdbId}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="font-extrabold text-[#79c0ff] hover:text-[#a5d6ff] hover:underline text-base sm:text-lg block leading-snug"
+                                >
+                                  {item.projectTitle}
+                                </a>
+                                <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px]">
+                                  <span className="bg-[#1f6feb]/15 text-[#58a6ff] border border-[#1f6feb]/30 px-2 py-0.5 rounded-full font-medium text-[10px]">
+                                    Matched: {formattedCredits}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
 
                             {/* Genres & Status Line */}
