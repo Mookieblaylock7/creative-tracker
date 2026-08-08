@@ -456,6 +456,19 @@ export default function Home() {
     }
   };
 
+  const undoLastImport = async () => {
+    if (lastImportBatchIds.length === 0) return;
+
+    if (!confirm(`Undo import of the last ${lastImportBatchIds.length} people?`)) return;
+
+    for (const personId of lastImportBatchIds) {
+      await unfollowPerson(personId);
+    }
+
+    setLastImportBatchIds([]);
+    localStorage.removeItem('last_import_batch');
+  };
+
   const deleteProject = async (id: string) => {
     setUpdates((prev) => prev.filter((p) => p.id !== id));
     await supabase.from('tracked_projects').delete().eq('id', id);
@@ -843,7 +856,7 @@ export default function Home() {
             <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
           </div>
           
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
               onClick={async () => {
@@ -870,6 +883,17 @@ export default function Home() {
               <Mail className="w-4 h-4 text-[#e3b341]" />
               <span>ALERTS</span>
             </button>
+
+            {lastImportBatchIds.length > 0 && (
+              <button
+                type="button"
+                onClick={undoLastImport}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#12171f] border border-amber-500/30 hover:border-amber-400 text-amber-400 rounded-md transition-all text-xs font-bold"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>UNDO IMPORT ({lastImportBatchIds.length})</span>
+              </button>
+            )}
 
             <button
               type="button"
