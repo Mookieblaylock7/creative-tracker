@@ -742,7 +742,7 @@ export default function Home() {
         <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.2</span>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.3</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#8b949e]">
             <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
@@ -773,6 +773,31 @@ export default function Home() {
           </button>
         </div>
       </header>
+
+        <section className="bg-[#161b22] border border-[#30363d] rounded-lg p-3.5 space-y-2">
+        <div className="flex justify-between items-center text-[10px] uppercase font-bold text-[#8b949e]">
+          <span>Find Film People</span>
+          <span>TMDB</span>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="e.g. Tom Cruise..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="flex-1 bg-[#0d1117] border border-[#30363d] px-3 py-1.5 text-xs text-white rounded focus:outline-none focus:border-[#58a6ff]"
+          />
+          <button
+            type="button"
+            onClick={handleSearch}
+            className="px-3 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-white rounded flex items-center justify-center transition-colors"
+          >
+            <Search className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </section>
+
+        
 
         {/* Tab Switcher */}
         <div className="flex bg-[#161b22] border border-[#30363d] p-1 rounded-lg my-3">
