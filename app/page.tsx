@@ -56,6 +56,7 @@ export default function Home() {
 
   // Email Digest & Reminders
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<"feed" | "people">("feed");
   const [emailFrequency, setEmailFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'none'>('weekly');
   const [activeReminders, setActiveReminders] = useState<number[]>([]);
 
@@ -862,6 +863,22 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Mobile View Switcher */}
+        <div className="flex md:hidden bg-[#161b22] border border-[#30363d] p-1 rounded-lg mb-4">
+          <button
+            onClick={() => setMobileTab("feed")}
+            className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${mobileTab === "feed" ? "bg-[#21262d] text-white" : "text-[#8b949e]"}`}
+          >
+            Timeline Feed
+          </button>
+          <button
+            onClick={() => setMobileTab("people")}
+            className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${mobileTab === "people" ? "bg-[#21262d] text-white" : "text-[#8b949e]"}`}
+          >
+            People You Follow ({creatives.length})
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-6">
             <section className="bg-[#161b22] border border-[#30363d] p-3 space-y-3">
@@ -983,7 +1000,7 @@ export default function Home() {
             </section>
           </div>
 
-          <div className="md:col-span-2">
+          <div className={`md:col-span-2 ${mobileTab === "people" ? "hidden md:block" : "block"}`}>
             <div className="w-full bg-[#161c23] border border-[#2d3542]">
               <div className="bg-[#414853] px-3 py-2 text-white font-bold text-sm tracking-wide flex justify-between items-center">
                 <span>Upcoming Projects Timeline</span>
