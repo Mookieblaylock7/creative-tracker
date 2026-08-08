@@ -1265,7 +1265,15 @@ export default function Home() {
               </div>
 
               <div className="pt-3">
-                <label className="block text-[10px] text-[#8b949e] uppercase font-bold mb-1">Select ratings.csv file:</label>
+                <div className="bg-[#161b22] border border-[#30363d] rounded p-3 my-2 text-[11px] text-[#8b949e] space-y-1.5">
+                  <div className="font-bold text-white uppercase text-[10px] tracking-wider">How to get your ratings.csv file:</div>
+                  <ol className="list-decimal list-inside space-y-1 text-[#c9d1d9] pl-1">
+                    <li>Log into <strong className="text-white">Letterboxd</strong> (web or mobile) and open <strong className="text-white">Settings</strong></li>
+                    <li>Go to the <strong className="text-white">Data</strong> tab and click <strong className="text-white">Export Your Data</strong></li>
+                    <li>Open the downloaded zip folder, locate <strong className="text-[#58a6ff]">ratings.csv</strong>, and select it below</li>
+                  </ol>
+                </div>
+                <label className="block text-[10px] text-[#8b949e] uppercase font-bold mb-1 mt-3">Select ratings.csv file:</label>
                 <input
                   type="file"
                   accept=".csv"
