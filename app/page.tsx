@@ -875,7 +875,7 @@ export default function Home() {
             onClick={() => setMobileTab("people")}
             className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${mobileTab === "people" ? "bg-[#21262d] text-white" : "text-[#8b949e]"}`}
           >
-            People You Follow ({followedCreatives ? followedCreatives.length : 70})
+            People You Follow
           </button>
         </div>
 
