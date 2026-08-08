@@ -76,6 +76,8 @@ export default function Home() {
   const [showDirecting, setShowDirecting] = useState(true);
   const [showWriting, setShowWriting] = useState(true);
   const [showActing, setShowActing] = useState(true);
+  const [showCinematography, setShowCinematography] = useState(true);
+  const [showMusic, setShowMusic] = useState(true);
   const [showProducing, setShowProducing] = useState(false);
   const [showExecProducing, setShowExecProducing] = useState(false);
 
@@ -90,6 +92,8 @@ export default function Home() {
   const [importDirectors, setImportDirectors] = useState(true);
   const [importWriters, setImportWriters] = useState(true);
   const [importCast, setImportCast] = useState(false);
+  const [importCinematographers, setImportCinematographers] = useState(true);
+  const [importComposers, setImportComposers] = useState(true);
   const [importSkipDocs, setImportSkipDocs] = useState(true);
   const [importProgress, setImportProgress] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
@@ -104,7 +108,6 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // Auto-detect mobile device on mount to set default tutorial tab
     if (typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
       setImportInstructionsTab('phone');
     }
@@ -500,6 +503,8 @@ export default function Home() {
               if (importDirectors && data.directors) creatorsToFollow.push(...data.directors);
               if (importWriters && data.writers) creatorsToFollow.push(...data.writers);
               if (importCast && data.topCast) creatorsToFollow.push(...data.topCast);
+              if (importCinematographers && data.cinematographers) creatorsToFollow.push(...data.cinematographers);
+              if (importComposers && data.composers) creatorsToFollow.push(...data.composers);
 
               for (const creator of creatorsToFollow) {
                 newlyAddedIds.add(creator.id);
@@ -618,6 +623,8 @@ export default function Home() {
 
       const isDirecting = r.includes('director') || r.includes('directing');
       const isWriting = r.includes('writer') || r.includes('writing') || r.includes('screenplay');
+      const isCinematography = r.includes('cinematograph') || r.includes('director of photography') || r.includes('camera');
+      const isMusic = r.includes('composer') || r.includes('music') || r.includes('score');
       const isExecProducing = r.includes('executive producer');
       const isProducing = r.includes('producer') && !isExecProducing;
       const isActing = r.startsWith('cast') || r.includes('actor') || r.includes('starring') || r.includes('self');
@@ -629,6 +636,8 @@ export default function Home() {
       if (showDirecting && isDirecting) return true;
       if (showWriting && isWriting) return true;
       if (showActing && isActing) return true;
+      if (showCinematography && isCinematography) return true;
+      if (showMusic && isMusic) return true;
       if (showProducing && isProducing) return true;
       if (showExecProducing && isExecProducing) return true;
 
@@ -700,9 +709,9 @@ export default function Home() {
     );
 
     if (roles.length === 1) {
-      if (roles[0] === 'Starring') {
-        return <span key={name}>Starring {nameButton}</span>;
-      }
+      if (roles[0] === 'Starring') return <span key={name}>Starring {nameButton}</span>;
+      if (roles[0] === 'Cinematography') return <span key={name}>Cinematography by {nameButton}</span>;
+      if (roles[0] === 'Music / Score') return <span key={name}>Music by {nameButton}</span>;
       return <span key={name}>{roles[0]} by {nameButton}</span>;
     } else if (roles.length === 2) {
       if (roles.includes('Starring')) {
@@ -731,6 +740,8 @@ export default function Home() {
 
       if (r.includes('director') || r.includes('directing')) roleClean = 'Directed';
       else if (r.includes('writer') || r.includes('writing') || r.includes('screenplay')) roleClean = 'Written';
+      else if (r.includes('cinematograph') || r.includes('director of photography')) roleClean = 'Cinematography';
+      else if (r.includes('composer') || r.includes('music') || r.includes('score')) roleClean = 'Music / Score';
       else if (r.includes('executive producer')) roleClean = 'Executive Produced';
       else if (r.includes('producer')) roleClean = 'Produced';
       else if (r.startsWith('cast') || r.includes('actor')) roleClean = 'Starring';
@@ -749,7 +760,7 @@ export default function Home() {
       }
     });
 
-    const order = ['Directed', 'Written', 'Executive Produced', 'Produced', 'Starring'];
+    const order = ['Directed', 'Written', 'Cinematography', 'Music / Score', 'Executive Produced', 'Produced', 'Starring'];
     const elements: React.ReactNode[] = [];
 
     let index = 0;
@@ -888,7 +899,7 @@ export default function Home() {
             </div>
             <input
               type="text"
-              placeholder="Search for an actor, director, writer, or other creator..."
+              placeholder="Search for an actor, director, writer, cinematographer, composer..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="flex-1 bg-transparent px-2 py-3 text-xs text-white focus:outline-none placeholder-[#8b949e]"
@@ -1026,6 +1037,32 @@ export default function Home() {
 
               <button
                 type="button"
+                onClick={() => setShowCinematography(!showCinematography)}
+                className={`flex items-center gap-2 px-3 py-2 rounded border text-xs transition-colors ${
+                  showCinematography ? 'bg-[#0b0e14] border-[#1f6beb] text-white' : 'bg-[#0b0e14] border-[#30363d] text-[#8b949e] hover:text-white'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded flex items-center justify-center ${showCinematography ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d]'}`}>
+                  {showCinematography && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <span>Cinematography</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowMusic(!showMusic)}
+                className={`flex items-center gap-2 px-3 py-2 rounded border text-xs transition-colors ${
+                  showMusic ? 'bg-[#0b0e14] border-[#1f6beb] text-white' : 'bg-[#0b0e14] border-[#30363d] text-[#8b949e] hover:text-white'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded flex items-center justify-center ${showMusic ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d]'}`}>
+                  {showMusic && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <span>Music / Score</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setShowProducing(!showProducing)}
                 className={`flex items-center gap-2 px-3 py-2 rounded border text-xs transition-colors ${
                   showProducing ? 'bg-[#0b0e14] border-[#1f6beb] text-white' : 'bg-[#0b0e14] border-[#30363d] text-[#8b949e] hover:text-white'
@@ -1098,7 +1135,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Main Content Layout: Side-by-Side Grid for Desktop */}
+        {/* Main Content Layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
           
           {/* LEFT SIDEBAR: People You Follow */}
@@ -1410,7 +1447,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Import Modal with Device-Tailored Tutorial Instructions */}
+      {/* Import Modal */}
       {isImportOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-[#12171f] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative rounded-lg">
@@ -1443,33 +1480,53 @@ export default function Home() {
 
               <div className="space-y-1.5">
                 <label className="block text-[10px] text-[#8b949e] uppercase font-bold">Auto-Follow</label>
-                <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={importDirectors}
-                    onChange={(e) => setImportDirectors(e.target.checked)}
-                    className="accent-[#58a6ff]"
-                  />
-                  Directors
-                </label>
-                <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={importWriters}
-                    onChange={(e) => setImportWriters(e.target.checked)}
-                    className="accent-[#58a6ff]"
-                  />
-                  Writers
-                </label>
-                <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={importCast}
-                    onChange={(e) => setImportCast(e.target.checked)}
-                    className="accent-[#58a6ff]"
-                  />
-                  Lead Actors / Cast
-                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={importDirectors}
+                      onChange={(e) => setImportDirectors(e.target.checked)}
+                      className="accent-[#58a6ff]"
+                    />
+                    Directors
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={importWriters}
+                      onChange={(e) => setImportWriters(e.target.checked)}
+                      className="accent-[#58a6ff]"
+                    />
+                    Writers
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={importCinematographers}
+                      onChange={(e) => setImportCinematographers(e.target.checked)}
+                      className="accent-[#58a6ff]"
+                    />
+                    Cinematographers
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={importComposers}
+                      onChange={(e) => setImportComposers(e.target.checked)}
+                      className="accent-[#58a6ff]"
+                    />
+                    Composers / Music
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer col-span-2">
+                    <input
+                      type="checkbox"
+                      checked={importCast}
+                      onChange={(e) => setImportCast(e.target.checked)}
+                      className="accent-[#58a6ff]"
+                    />
+                    Lead Actors / Cast
+                  </label>
+                </div>
               </div>
 
               <div className="pt-2 border-t border-[#30363d]">
@@ -1522,7 +1579,7 @@ export default function Home() {
                     <ol className="list-decimal list-inside space-y-1.5">
                       <li>In your phone browser, open <a href="https://letterboxd.com/user/exportdata" target="_blank" rel="noreferrer" className="text-[#58a6ff] underline font-bold">letterboxd.com/user/exportdata</a> and log in.</li>
                       <li>Save the downloaded zip file to your phone's <strong className="text-white">Files</strong> app.</li>
-                      <li>Open Files, tap the zip file to extract it, and hold down <strong className="text-[#58a6ff]">ratings.csv</strong> to ensure it's saved locally.</li>
+                      <li>Open Files, tap the zip file to extract it, then press & hold <strong className="text-[#58a6ff]">ratings.csv</strong> and tap <strong className="text-white">Keep Downloaded</strong>.</li>
                       <li>Return here, tap <strong className="text-white">Choose File</strong> below, and select <strong className="text-[#58a6ff]">ratings.csv</strong> from Recents.</li>
                     </ol>
                   )}
