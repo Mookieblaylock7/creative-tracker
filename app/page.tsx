@@ -742,7 +742,7 @@ export default function Home() {
         <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.5</span>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.6</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#8b949e]">
             <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
@@ -795,6 +795,55 @@ export default function Home() {
               <Search className="w-3.5 h-3.5" />
             </button>
           </form>
+
+          {/* Search Results Display List */}
+          {searchResults && searchResults.length > 0 && (
+            <div className="mt-3 pt-2 border-t border-[#30363d] space-y-2 max-h-64 overflow-y-auto divide-y divide-[#30363d]/50">
+              {searchResults.map((person) => {
+                const isFollowed = followed.some((f) => f.id === person.id);
+                return (
+                  <div key={person.id} className="pt-2 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      {person.profile_path ? (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w45${person.profile_path}`}
+                          alt={person.name}
+                          className="w-8 h-8 rounded-full object-cover border border-[#30363d]"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-[#30363d] flex items-center justify-center text-[10px] text-white font-bold">
+                          {person.name?.[0]}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-bold text-white">{person.name}</div>
+                        <div className="text-[10px] text-[#8b949e]">
+                          {person.known_for_department || person.department || "Creative"}
+                        </div>
+                      </div>
+                    </div>
+                    {isFollowed ? (
+                      <button
+                        type="button"
+                        onClick={() => unfollowPerson(person.id)}
+                        className="px-2 py-1 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 text-red-400 text-[10px] font-bold rounded"
+                      >
+                        Unfollow
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => followPerson(person)}
+                        className="px-2 py-1 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-white text-[10px] font-bold rounded flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" /> Follow
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         
