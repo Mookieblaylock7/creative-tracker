@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Share2, Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye, Users, Bell, BellOff, Mail } from 'lucide-react';
+import { Share2, Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye, Users, Bell, BellOff, Mail, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -68,8 +68,10 @@ export default function Home() {
 
   const [lastImportBatchIds, setLastImportBatchIds] = useState<number[]>([]);
 
-  // Selected Person Dedicated Modal View
+  // Selected Person Dedicated Modal View State
   const [selectedPersonModal, setSelectedPersonModal] = useState<Creative | null>(null);
+  const [modalProjects, setModalProjects] = useState<any[]>([]);
+  const [isModalLoading, setIsModalLoading] = useState<boolean>(false);
 
   // Checkbox Role Filters (Left)
   const [showDirecting, setShowDirecting] = useState(true);
@@ -281,10 +283,6 @@ export default function Home() {
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  };
-
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!query.trim()) return;
@@ -294,6 +292,52 @@ export default function Home() {
       setSearchResults(data);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  // Open modal and fetch credits directly from TMDB for anyone (followed or unfollowed)
+  const openPersonModal = async (person: Creative) => {
+    setSelectedPersonModal(person);
+    setIsModalLoading(true);
+    setModalProjects([]);
+
+    try {
+      const res = await fetch(`/api/creative?id=${person.id}`);
+      const credits = await res.json();
+      const todayISO = getTodayISO();
+
+      const grouped = new Map<number, { tmdbId: number; title: string; mediaType: string; status: string; releaseHeader: string; roles: string[] }>();
+
+      for (const c of credits || []) {
+        const rawDate = c.release_date || c.first_air_date;
+        if (rawDate && rawDate < todayISO) continue;
+
+        const dateInfo = parseReleaseDate(rawDate);
+        const title = c.title || c.name || 'Untitled Project';
+        const rawRole = c.job || (c.character ? `Cast (${c.character})` : person.department || 'Creative');
+
+        if (!grouped.has(c.id)) {
+          grouped.set(c.id, {
+            tmdbId: c.id,
+            title,
+            mediaType: c.media_type || 'movie',
+            status: rawDate ? 'Announced' : 'In Development',
+            releaseHeader: dateInfo.header,
+            roles: [],
+          });
+        }
+
+        const item = grouped.get(c.id)!;
+        if (!item.roles.includes(rawRole)) {
+          item.roles.push(rawRole);
+        }
+      }
+
+      setModalProjects(Array.from(grouped.values()));
+    } catch (err) {
+      console.error('Error fetching person credits for modal:', err);
+    } finally {
+      setIsModalLoading(false);
     }
   };
 
@@ -405,19 +449,6 @@ export default function Home() {
     }
   };
 
-  const undoLastImport = async () => {
-    if (lastImportBatchIds.length === 0) return;
-
-    if (!confirm(`Undo import of the last ${lastImportBatchIds.length} people?`)) return;
-
-    for (const personId of lastImportBatchIds) {
-      await unfollowPerson(personId);
-    }
-
-    setLastImportBatchIds([]);
-    localStorage.removeItem('last_import_batch');
-  };
-
   const deleteProject = async (id: string) => {
     setUpdates((prev) => prev.filter((p) => p.id !== id));
     await supabase.from('tracked_projects').delete().eq('id', id);
@@ -518,7 +549,6 @@ export default function Home() {
   });
 
   const filteredGroupedUpdates = Array.from(groupedMap.values()).filter((group) => {
-    // Date Filtering (Month & Year)
     const dateStr = String(group.releaseDateHeader || group.sortKey || "").toLowerCase();
 
     const matchesYear = (() => {
@@ -539,6 +569,7 @@ export default function Home() {
       }
       return dateStr.includes(String(filterYear).toLowerCase());
     })();
+
     const matchesMonth = filterMonth === "ALL" || (() => {
       if (!dateStr) return false;
       const fM = filterMonth.toLowerCase();
@@ -562,6 +593,7 @@ export default function Home() {
 
       return false;
     })();
+
     if (!matchesYear || !matchesMonth) return false;
     if (!includeMovies && group.mediaType === 'movie') return false;
     if (!includeTV && group.mediaType === 'tv') return false;
@@ -571,9 +603,7 @@ export default function Home() {
     const isDoc =
       details.genres.some((g) => g.toLowerCase().includes('documentary')) ||
       titleLower.includes('docu') ||
-      titleLower.includes('making of') ||
-      titleLower.includes('operação lorca') ||
-      titleLower.includes('once upon a time in jersey');
+      titleLower.includes('making of');
 
     if (!includeDocs && isDoc) return false;
 
@@ -759,30 +789,6 @@ export default function Home() {
     );
   }
 
-  const personRawProjects = selectedPersonModal
-    ? updates.filter((u) => u.creativeName.toLowerCase() === selectedPersonModal.name.toLowerCase())
-    : [];
-
-  const personGroupedMap = new Map<number, { tmdbId: number; title: string; mediaType: string; status: string; releaseHeader: string; roles: string[] }>();
-  personRawProjects.forEach((p) => {
-    if (!personGroupedMap.has(p.tmdbId)) {
-      personGroupedMap.set(p.tmdbId, {
-        tmdbId: p.tmdbId,
-        title: p.projectTitle,
-        mediaType: p.mediaType,
-        status: p.status,
-        releaseHeader: p.releaseDateHeader,
-        roles: [],
-      });
-    }
-    const item = personGroupedMap.get(p.tmdbId)!;
-    if (!item.roles.includes(p.role)) {
-      item.roles.push(p.role);
-    }
-  });
-
-  const personProjects = Array.from(personGroupedMap.values());
-
   return (
     <main className="min-h-screen bg-[#0b0e14] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
       <div className="w-full max-w-6xl mx-auto space-y-5">
@@ -840,7 +846,7 @@ export default function Home() {
           </div>
         </header>
 
-        {/* FIND YOUR FILM PEOPLE - Mockup Search Box */}
+        {/* FIND YOUR FILM PEOPLE - Search Box */}
         <section className="bg-[#12171f] border border-[#21262d] rounded-md p-4 space-y-3">
           <div className="flex justify-between items-center text-xs">
             <span className="text-white font-extrabold uppercase tracking-wide">FIND YOUR FILM PEOPLE</span>
@@ -888,7 +894,14 @@ export default function Home() {
                         </div>
                       )}
                       <div>
-                        <button type="button" onClick={() => setSelectedPersonModal({ id: person.id, name: person.name, department: person.known_for_department || "Creative" })} className="font-bold text-white hover:text-[#58a6ff] hover:underline text-left cursor-pointer">{person.name}</button>
+                        {/* Clickable name opens modal dynamically regardless of follow status */}
+                        <button 
+                          type="button" 
+                          onClick={() => openPersonModal({ id: person.id, name: person.name, department: person.known_for_department || "Creative" })} 
+                          className="font-bold text-white hover:text-[#58a6ff] hover:underline text-left cursor-pointer"
+                        >
+                          {person.name}
+                        </button>
                         <div className="text-[10px] text-[#8b949e]">
                           {person.known_for_department || person.department || "Creative"}
                         </div>
@@ -936,7 +949,7 @@ export default function Home() {
           </button>
         </div>
 
-        {/* FILTER YOUR TIMELINE - Mockup Filters Box */}
+        {/* FILTER YOUR TIMELINE - Filters Box */}
         <section className="bg-[#12171f] border border-[#21262d] rounded-md p-4 space-y-4">
           <h2 className="text-white font-extrabold uppercase tracking-wide text-xs">FILTER YOUR TIMELINE</h2>
           
@@ -1057,7 +1070,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Main Content Layout: Side-by-Side Grid for Desktop (People Left, Timeline Right) */}
+        {/* Main Content Layout: Side-by-Side Grid for Desktop */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
           
           {/* LEFT SIDEBAR: People You Follow */}
@@ -1081,7 +1094,7 @@ export default function Home() {
               {followed.map((person) => (
                 <li key={person.id} className="py-2 flex justify-between items-center group px-1">
                   <div
-                    onClick={() => setSelectedPersonModal(person)}
+                    onClick={() => openPersonModal(person)}
                     className="cursor-pointer group-hover:text-[#58a6ff]"
                   >
                     <div className="font-bold text-[#58a6ff] flex items-center gap-1.5 text-xs">
@@ -1298,7 +1311,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Single Person Dedicated View Modal */}
+      {/* Single Person Dedicated View Modal (Fetches dynamically for ANY creator) */}
       {selectedPersonModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-[#12171f] border border-[#30363d] w-full max-w-xl p-5 space-y-4 relative rounded-lg">
@@ -1309,21 +1322,38 @@ export default function Home() {
               <X className="w-4 h-4" />
             </button>
 
-            <div className="border-b border-[#30363d] pb-2">
-              <h2 className="text-base font-bold text-white uppercase tracking-wide flex items-center gap-2">
-                <span className="text-[#58a6ff]">{selectedPersonModal.name}</span>
-                <span className="text-xs text-[#8b949e] font-normal">({selectedPersonModal.department})</span>
-              </h2>
-              <p className="text-[11px] text-[#8b949e] mt-0.5">All upcoming & logged projects for this creator</p>
+            <div className="border-b border-[#30363d] pb-2 flex justify-between items-center pr-6">
+              <div>
+                <h2 className="text-base font-bold text-white uppercase tracking-wide flex items-center gap-2">
+                  <span className="text-[#58a6ff]">{selectedPersonModal.name}</span>
+                  <span className="text-xs text-[#8b949e] font-normal">({selectedPersonModal.department})</span>
+                </h2>
+                <p className="text-[11px] text-[#8b949e] mt-0.5">All upcoming & logged projects for this creator</p>
+              </div>
+
+              {!followed.some((f) => f.id === selectedPersonModal.id) && (
+                <button
+                  type="button"
+                  onClick={() => followPerson(selectedPersonModal)}
+                  className="px-2.5 py-1 bg-[#1f6beb] hover:bg-[#388bfd] text-white text-[10px] font-bold rounded flex items-center gap-1 transition-colors"
+                >
+                  <Plus className="w-3 h-3" /> Follow
+                </button>
+              )}
             </div>
 
-            <div className="max-h-96 overflow-y-auto divide-y divide-[#30363d]/50 pr-1 space-y-3">
-              {personProjects.length === 0 ? (
+            <div className="max-h-96 overflow-y-auto divide-y divide-[#30363d]/50 pr-1 space-y-3 min-h-[120px] flex flex-col justify-center">
+              {isModalLoading ? (
+                <div className="py-8 text-center text-[#8b949e] flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#58a6ff]" />
+                  <span>Fetching upcoming projects...</span>
+                </div>
+              ) : modalProjects.length === 0 ? (
                 <div className="py-8 text-center text-[#8b949e]">
-                  No logged projects found for {selectedPersonModal.name}.
+                  No upcoming projects logged for {selectedPersonModal.name}.
                 </div>
               ) : (
-                personProjects.map((proj, idx) => (
+                modalProjects.map((proj, idx) => (
                   <div key={idx} className="pt-2 leading-tight flex justify-between items-start">
                     <div>
                       <div className="font-bold text-white text-xs">
