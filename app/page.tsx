@@ -1024,10 +1024,16 @@ export default function Home() {
                               href={`https://www.themoviedb.org/${item.mediaType}/${item.tmdbId}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="font-bold text-[#79c0ff] hover:text-[#a5d6ff] hover:underline text-xs block"
+                              className="font-bold text-[#79c0ff] hover:text-[#a5d6ff] hover:underline text-sm block"
                             >
-                              {formattedCredits} - {item.projectTitle}
+                              {item.projectTitle}
                             </a>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                              <span className="text-[10px] text-[#8b949e] uppercase font-bold tracking-wider mr-0.5">Matched:</span>
+                              <span className="bg-[#1f6feb]/20 text-[#58a6ff] border border-[#1f6feb]/40 px-1.5 py-0.5 rounded text-[11px] font-medium">
+                                {formattedCredits}
+                              </span>
+                            </div>
 
                             {/* Genres & Status Line */}
                             <div className="text-[11px] text-[#8b949e] mt-1 flex flex-wrap items-center gap-2">
