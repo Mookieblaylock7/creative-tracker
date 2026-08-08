@@ -1165,7 +1165,7 @@ export default function Home() {
                     <div>
                       <div className="font-bold text-white text-xs">
                         <a
-                          href={`https://www.themoviedb.org/${proj.mediaType}`}
+                          href={`https://www.themoviedb.org/${proj.mediaType}/${proj.tmdbId || proj.id || proj.tmdb_id}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-[#a5d6ff] hover:underline"
