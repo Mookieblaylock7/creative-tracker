@@ -903,7 +903,7 @@ export default function Home() {
 
         {/* Filter Toolbar */}
         <div className="bg-[#161b22] border border-[#30363d] p-3 rounded-lg text-xs">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full">
+          <div className="flex flex-col sm:flex-row gap-6 w-full">
             <div className="space-y-1.5">
               <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1 mb-1">
                 <Filter className="w-3 h-3 text-[#58a6ff]" /> Roles:
@@ -954,7 +954,7 @@ export default function Home() {
           </div>
         </div>
 
-<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div className="flex flex-col sm:flex-row gap-6 w-full">
           <div className="space-y-6">
             
 
