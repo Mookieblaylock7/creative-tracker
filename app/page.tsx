@@ -742,7 +742,7 @@ export default function Home() {
         <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.1</span>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.2</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#8b949e]">
             <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
@@ -773,6 +773,24 @@ export default function Home() {
           </button>
         </div>
       </header>
+
+        {/* Tab Switcher */}
+        <div className="flex bg-[#161b22] border border-[#30363d] p-1 rounded-lg my-3">
+          <button
+            type="button"
+            onClick={() => setActiveTab("feed")}
+            className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${activeTab === "feed" ? "bg-[#21262d] text-white border border-[#30363d]" : "text-[#8b949e] hover:text-white"}`}
+          >
+            Timeline Feed
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("people")}
+            className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${activeTab === "people" ? "bg-[#21262d] text-white border border-[#30363d]" : "text-[#8b949e] hover:text-white"}`}
+          >
+            People You Follow
+          </button>
+        </div>
 
         {/* Filter Toolbar */}
         <div className="bg-[#161b22] border border-[#30363d] p-3 rounded-lg text-xs">
