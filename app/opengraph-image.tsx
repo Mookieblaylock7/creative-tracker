@@ -18,44 +18,66 @@ export default async function Image() {
           alignItems: "center",
           justifyContent: "center",
           fontFamily: "sans-serif",
-          border: "12px solid #30363d",
+          border: "8px solid #30363d",
         }}
       >
+        {/* Main Logo Container */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: 140,
-            height: 140,
-            borderRadius: 28,
+            width: 120,
+            height: 120,
+            borderRadius: 24,
             background: "#161b22",
-            border: "2px solid #30363d",
-            marginBottom: 24,
-            fontSize: 64,
-            fontWeight: "bold",
-            color: "#58a6ff",
+            border: "2px solid #58a6ff",
+            marginBottom: 28,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
           }}
         >
-          🎬
+          <svg
+            width="64"
+            height="64"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#58a6ff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+            <line x1="7" y1="2" x2="7" y2="22" />
+            <line x1="17" y1="2" x2="17" y2="22" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <line x1="2" y1="7" x2="7" y2="7" />
+            <line x1="2" y1="17" x2="7" y2="17" />
+            <line x1="17" y1="17" x2="22" y2="17" />
+            <line x1="17" y1="7" x2="22" y2="7" />
+          </svg>
         </div>
+
+        {/* Title */}
         <div
           style={{
-            fontSize: 64,
-            fontWeight: "bold",
+            fontSize: 58,
+            fontWeight: 900,
             color: "#ffffff",
-            letterSpacing: "-2px",
-            marginBottom: 16,
+            letterSpacing: "-1px",
+            marginBottom: 12,
           }}
         >
           MY FILM PEOPLE
         </div>
+
+        {/* Subtitle */}
         <div
           style={{
-            fontSize: 24,
+            fontSize: 22,
             color: "#8b949e",
-            maxWidth: 800,
+            maxWidth: 700,
             textAlign: "center",
+            lineHeight: 1.4,
           }}
         >
           Track upcoming movies, TV shows, and docs from your favorite film industry creatives.
