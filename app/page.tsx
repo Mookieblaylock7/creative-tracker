@@ -738,46 +738,41 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
       <div className="w-full max-w-5xl mx-auto space-y-6 px-3 sm:px-6 overflow-x-hidden">
-        <header className="border-b border-[#2d3542] pb-3 flex justify-between items-center">
-          <h1 className="text-lg font-bold text-white tracking-wider uppercase flex flex-wrap items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-            MY FILM PEOPLE <span className="text-[#58a6ff] text-xs font-normal">v5.1</span>
-          </h1>
-          <div className="flex items-center gap-3 text-[#8b949e] text-xs">
+        <header className="flex flex-col gap-3 pb-4 border-b border-[#30363d]">
+        <div className="flex items-center justify-between w-full">
+          <div>
+            <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.1</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-[#8b949e]">
+            <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
             <button
-              onClick={() => setIsAlertsModalOpen(true)}
-              className="bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-amber-400 px-2.5 py-1 flex items-center gap-1.5 font-bold transition-colors"
+              onClick={() => supabase.auth.signOut()}
+              className="p-1.5 hover:bg-[#21262d] text-[#8b949e] hover:text-white rounded transition-colors"
+              title="Log Out"
             >
-              <Mail className="w-3.5 h-3.5" />
-              Email Alerts ({emailFrequency})
-            </button>
-            {lastImportBatchIds.length > 0 && (
-              <button
-                onClick={undoLastImport}
-                className="bg-amber-900/40 hover:bg-amber-800/60 border border-amber-600/50 text-amber-200 px-2.5 py-1 flex items-center gap-1.5 font-bold transition-colors"
-              >
-                <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                Undo Import ({lastImportBatchIds.length})
-              </button>
-            )}
-            <button
-              onClick={() => setIsImportOpen(true)}
-              className="bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white px-2.5 py-1 flex items-center gap-1.5 font-bold transition-colors"
-            >
-              <Upload className="w-3.5 h-3.5 text-[#58a6ff]" />
-              Import Letterboxd
-            </button>
-            <span className="flex items-center gap-1 text-white">
-              <User className="w-3.5 h-3.5 text-[#58a6ff]" />
-              {session.user.email}
-            </span>
-            <button
-              onClick={handleSignOut}
-              className="hover:text-white flex items-center gap-1 border border-[#30363d] px-2 py-1 bg-[#21262d]"
-            >
-              <LogOut className="w-3 h-3" />
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
-        </header>
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <button
+            onClick={() => setIsAlertsModalOpen(true)}
+            className="flex-1 sm:flex-none h-9 px-3 bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] rounded text-xs font-semibold text-[#d29922] flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            Email Alerts ({emailFrequency})
+          </button>
+          <button
+            onClick={() => setIsImportOpen(true)}
+            className="flex-1 sm:flex-none h-9 px-3 bg-[#161b22] hover:bg-[#21262d] border border-[#30363d] rounded text-xs font-semibold text-[#58a6ff] flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            Import Letterboxd
+          </button>
+        </div>
+      </header>
 
         {/* Filter Toolbar */}
         <div className="bg-[#161b22] border border-[#30363d] p-3 flex flex-wrap justify-between items-center gap-4">
