@@ -681,8 +681,46 @@ export default function Home() {
     });
   }, [sortedGroupedUpdates, detailsCache]);
 
-  const formatCreditsLine = (creatives: Array<{ name: string; role: string }>) => {
-    const creativeRoleMap = new Map<string, string[]>();
+  // Renders individual credit phrases with clickable name hyperlinks
+  const renderCreativePhrase = (name: string, roles: string[], personId: number, department: string, order: string[]) => {
+    roles.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    
+    const nameButton = (
+      <button
+        key="name"
+        type="button"
+        onClick={() => openPersonModal({ id: personId, name, department })}
+        className="text-[#79c0ff] hover:underline font-bold inline cursor-pointer"
+      >
+        {name}
+      </button>
+    );
+
+    if (roles.length === 1) {
+      if (roles[0] === 'Starring') {
+        return <span key={name}>Starring {nameButton}</span>;
+      }
+      return <span key={name}>{roles[0]} by {nameButton}</span>;
+    } else if (roles.length === 2) {
+      if (roles.includes('Starring')) {
+        const nonStarring = roles.filter((r) => r !== 'Starring');
+        return <span key={name}>{nonStarring[0]} by and Starring {nameButton}</span>;
+      } else {
+        return <span key={name}>{roles[0]} and {roles[1]} by {nameButton}</span>;
+      }
+    } else {
+      const lastRole = roles[roles.length - 1];
+      const initialRoles = roles.slice(0, roles.length - 1).join(', ');
+      if (roles.includes('Starring') && lastRole === 'Starring') {
+        return <span key={name}>{initialRoles}, and Starring {nameButton}</span>;
+      } else {
+        return <span key={name}>{initialRoles}, and {lastRole} by {nameButton}</span>;
+      }
+    }
+  };
+
+  const renderCreditsLineJSX = (creatives: Array<{ name: string; role: string; updateId: string }>) => {
+    const creativeRoleMap = new Map<string, { roles: string[]; personId: number; department: string }>();
 
     creatives.forEach((c) => {
       let r = c.role.toLowerCase();
@@ -694,45 +732,33 @@ export default function Home() {
       else if (r.includes('producer')) roleClean = 'Produced';
       else if (r.startsWith('cast') || r.includes('actor')) roleClean = 'Starring';
 
+      const personId = parseInt(c.updateId.split('-')[0], 10) || 0;
+      const matchedFollowed = followed.find(f => f.name.toLowerCase() === c.name.toLowerCase());
+      const department = matchedFollowed?.department || 'Creative';
+      const resolvedId = matchedFollowed?.id || personId;
+
       if (!creativeRoleMap.has(c.name)) {
-        creativeRoleMap.set(c.name, []);
+        creativeRoleMap.set(c.name, { roles: [], personId: resolvedId, department });
       }
       const existing = creativeRoleMap.get(c.name)!;
-      if (!existing.includes(roleClean)) {
-        existing.push(roleClean);
+      if (!existing.roles.includes(roleClean)) {
+        existing.roles.push(roleClean);
       }
     });
 
-    const entries: string[] = [];
-    creativeRoleMap.forEach((roles, name) => {
-      const order = ['Directed', 'Written', 'Executive Produced', 'Produced', 'Starring'];
-      roles.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    const order = ['Directed', 'Written', 'Executive Produced', 'Produced', 'Starring'];
+    const elements: React.ReactNode[] = [];
 
-      let rolePhrase = '';
-      if (roles.length === 1) {
-        if (roles[0] === 'Starring') rolePhrase = `Starring ${name}`;
-        else rolePhrase = `${roles[0]} by ${name}`;
-      } else if (roles.length === 2) {
-        if (roles.includes('Starring')) {
-          const nonStarring = roles.filter((r) => r !== 'Starring');
-          rolePhrase = `${nonStarring[0]} by and Starring ${name}`;
-        } else {
-          rolePhrase = `${roles[0]} and ${roles[1]} by ${name}`;
-        }
-      } else if (roles.length >= 3) {
-        const lastRole = roles[roles.length - 1];
-        const initialRoles = roles.slice(0, roles.length - 1).join(', ');
-        if (roles.includes('Starring') && lastRole === 'Starring') {
-          rolePhrase = `${initialRoles}, and Starring ${name}`;
-        } else {
-          rolePhrase = `${initialRoles}, and ${lastRole} by ${name}`;
-        }
+    let index = 0;
+    creativeRoleMap.forEach(({ roles, personId, department }, name) => {
+      if (index > 0) {
+        elements.push(<span key={`sep-${index}`} className="text-[#8b949e]"> · </span>);
       }
-
-      entries.push(rolePhrase);
+      elements.push(renderCreativePhrase(name, roles, personId, department, order));
+      index++;
     });
 
-    return entries.join(' · ');
+    return elements;
   };
 
   if (!session) {
@@ -894,7 +920,6 @@ export default function Home() {
                         </div>
                       )}
                       <div>
-                        {/* Clickable name opens modal dynamically regardless of follow status */}
                         <button 
                           type="button" 
                           onClick={() => openPersonModal({ id: person.id, name: person.name, department: person.known_for_department || "Creative" })} 
@@ -1171,7 +1196,7 @@ export default function Home() {
                     const showDateHeader =
                       idx === 0 || sortedGroupedUpdates[idx - 1].releaseDateHeader !== item.releaseDateHeader;
 
-                    const formattedCredits = formatCreditsLine(item.creatives);
+                    const formattedCreditsJSX = renderCreditsLineJSX(item.creatives);
                     const details = detailsCache[item.tmdbId] || { genres: [], topCast: [] };
                     const isBellActive = activeReminders.includes(item.tmdbId);
 
@@ -1200,7 +1225,7 @@ export default function Home() {
                                 </a>
                                 <div className="mt-1 flex flex-wrap items-center gap-2">
                                   <span className="text-xs font-semibold text-white/90 bg-[#161b22] border border-[#30363d] px-2 py-0.5 rounded-md">
-                                    {formattedCredits}
+                                    {formattedCreditsJSX}
                                   </span>
                                   <span className="text-[10px] uppercase font-bold tracking-wider text-[#8b949e]">
                                     MATCHED
@@ -1311,7 +1336,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Single Person Dedicated View Modal (Fetches dynamically for ANY creator) */}
+      {/* Single Person Dedicated View Modal */}
       {selectedPersonModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-[#12171f] border border-[#30363d] w-full max-w-xl p-5 space-y-4 relative rounded-lg">
@@ -1350,7 +1375,7 @@ export default function Home() {
                 </div>
               ) : modalProjects.length === 0 ? (
                 <div className="py-8 text-center text-[#8b949e]">
-                  No upcoming projects logged for {selectedPersonModal.name}.
+                  No logged projects found for {selectedPersonModal.name}.
                 </div>
               ) : (
                 modalProjects.map((proj, idx) => (
