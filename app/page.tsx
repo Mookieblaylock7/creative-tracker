@@ -742,7 +742,7 @@ export default function Home() {
         <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.6</span>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.7</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#8b949e]">
             <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
@@ -816,7 +816,7 @@ export default function Home() {
                         </div>
                       )}
                       <div>
-                        <div className="font-bold text-white">{person.name}</div>
+                        <button type="button" onClick={() => setSelectedPersonModal({ id: person.id, name: person.name, department: person.known_for_department || "Creative" })} className="font-bold text-white hover:text-[#58a6ff] hover:underline text-left cursor-pointer">{person.name}</button>
                         <div className="text-[10px] text-[#8b949e]">
                           {person.known_for_department || person.department || "Creative"}
                         </div>
