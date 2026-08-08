@@ -525,18 +525,17 @@ export default function Home() {
       if (filterYear === "ALL") return true;
       if (filterYear === "IN_DEV") {
         const header = String(group.releaseDateHeader || "").toLowerCase();
-        const statusStr = String(group.status || "").toLowerCase();
         const sort = String(group.sortKey || "").toLowerCase();
         
-        const hasSpecificYear = /\b(202[4-9]|203[0-9])\b/.test(header);
-        const isDev = 
-          !hasSpecificYear ||
-          header.includes("dev") || header.includes("tbd") || header.includes("tba") || 
-          header.includes("announced") || header.includes("rumor") || header.includes("unknown") ||
-          statusStr.includes("dev") || statusStr.includes("tbd") || statusStr.includes("announced") || 
-          statusStr.includes("in production") || statusStr.includes("pre-production") || sort.includes("9999");
+        const hasYear = /\b(19|20)\d{2}\b/.test(header);
+        const isExplicitTbd = 
+          header.includes("tbd") || 
+          header.includes("tba") || 
+          header.includes("dev") || 
+          header.includes("unknown") || 
+          sort.includes("9999");
 
-        return isDev;
+        return isExplicitTbd || !hasYear;
       }
       return dateStr.includes(String(filterYear).toLowerCase());
     })();
@@ -822,7 +821,7 @@ export default function Home() {
     <div>
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.42</span>
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.43</span>
       </div>
       <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
     </div>
