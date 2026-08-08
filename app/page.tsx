@@ -773,7 +773,7 @@ export default function Home() {
         <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.9</span>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.12</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#8b949e]">
             <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
@@ -901,7 +901,7 @@ export default function Home() {
 
         {/* Filter Toolbar */}
         <div className="bg-[#161b22] border border-[#30363d] p-3 rounded-lg text-xs">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full">
             <div className="space-y-1.5">
               <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1 mb-1">
                 <Filter className="w-3 h-3 text-[#58a6ff]" /> Roles:
