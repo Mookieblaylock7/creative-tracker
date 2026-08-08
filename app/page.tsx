@@ -821,7 +821,7 @@ export default function Home() {
     <div>
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.52</span>
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.56</span>
       </div>
       <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
     </div>
@@ -839,7 +839,7 @@ export default function Home() {
         }}
         className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#58a6ff] text-[#58a6ff] rounded-xl w-20 h-20 transition-all shadow-sm"
       >
-        <span className="text-xl mb-1">🔗</span>
+        <span className="text-xl mb-1"><svg className="w-4 h-4 text-[#8b949e] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span>
         <span className="text-[10px] font-bold uppercase tracking-wider">Share</span>
       </button>
 
@@ -848,7 +848,7 @@ export default function Home() {
         onClick={() => setIsAlertsModalOpen(true)}
         className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#d29922] text-[#d29922] rounded-xl w-20 h-20 transition-all shadow-sm"
       >
-        <span className="text-xl mb-1">✉️</span>
+        <span className="text-xl mb-1"><svg className="w-4 h-4 text-[#e3b341] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></span>
         <span className="text-[10px] font-bold uppercase tracking-wider">Alerts</span>
       </button>
 
@@ -857,8 +857,8 @@ export default function Home() {
         onClick={() => setIsImportOpen(true)}
         className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#8b949e] text-[#c9d1d9] rounded-xl w-20 h-20 transition-all shadow-sm"
       >
-        <span className="text-xl mb-1">⬆️</span>
-        <span className="text-[10px] font-bold uppercase tracking-wider">Import</span>
+        <span className="text-xl mb-1"><span className="flex items-center gap-0.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#ff8000]"></span><span className="w-2 h-2 rounded-full bg-[#00e054]"></span><span className="w-2 h-2 rounded-full bg-[#40bcf4]"></span></span></span>
+        <span className="text-[9px] font-bold uppercase tracking-wider text-center leading-tight">IMPORT FROM LETTERBOXD</span>
       </button>
     </div>
   </div>
@@ -867,7 +867,7 @@ export default function Home() {
         {/* FIND YOUR FILM PEOPLE <span className="text-[11px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming projects)</span> <span className="text-[10px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming releases)</span> <span className="text-[10px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming releases)</span> - Single Top Search Bar */}
         <section className="bg-[#161b22] border border-[#30363d] rounded-lg p-3.5 space-y-2 mb-3">
           <div className="flex justify-between items-center text-[10px] uppercase font-extrabold tracking-wider">
-            <span className="text-white font-bold">FIND FILM PEOPLE</span><span className="text-[11px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming projects)</span>
+            <span className="text-white font-bold">FIND YOUR FILM PEOPLE</span><span className="text-[11px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming projects)</span>
             
           </div>
           <form onSubmit={(e) => { e.preventDefault(); handleSearch(e); }} className="flex gap-2">
