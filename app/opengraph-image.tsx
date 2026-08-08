@@ -1,20 +1,11 @@
 import { ImageResponse } from "next/og";
-import fs from "fs";
-import path from "path";
 
-export const runtime = "nodejs";
+export const runtime = "edge";
 export const alt = "My Film People";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function Image() {
-  const svgPath = path.join(process.cwd(), "app", "icon.svg");
-  let base64Svg = "";
-  if (fs.existsSync(svgPath)) {
-    const svgData = fs.readFileSync(svgPath, "utf8");
-    base64Svg = "data:image/svg+xml;base64," + Buffer.from(svgData).toString("base64");
-  }
-
   return new ImageResponse(
     (
       <div
@@ -35,36 +26,35 @@ export default async function Image() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: "160px",
-            height: "160px",
-            borderRadius: "32px",
+            width: 140,
+            height: 140,
+            borderRadius: 28,
             background: "#161b22",
             border: "2px solid #30363d",
-            marginBottom: "28px",
-            overflow: "hidden",
-            padding: "20px",
+            marginBottom: 24,
+            fontSize: 64,
+            fontWeight: "bold",
+            color: "#58a6ff",
           }}
         >
-          {base64Svg ? (
-            <img src={base64Svg} width="120" height="120" alt="My Film People Logo" />
-          ) : null}
+          🎬
         </div>
         <div
           style={{
-            fontSize: "64px",
+            fontSize: 64,
             fontWeight: "bold",
             color: "#ffffff",
             letterSpacing: "-2px",
-            marginBottom: "16px",
+            marginBottom: 16,
           }}
         >
           MY FILM PEOPLE
         </div>
         <div
           style={{
-            fontSize: "24px",
+            fontSize: 24,
             color: "#8b949e",
-            maxWidth: "800px",
+            maxWidth: 800,
             textAlign: "center",
           }}
         >
