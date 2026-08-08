@@ -518,6 +518,17 @@ export default function Home() {
   });
 
   const filteredGroupedUpdates = Array.from(groupedMap.values()).filter((group) => {
+    // Date Filtering (Month & Year)
+    const pDate = String(group.releaseDate || group.date || group.release_date || group.year || group.dateFormatted || "").toLowerCase();
+    const matchesYear = filterYear === "ALL" || pDate.includes(String(filterYear).toLowerCase());
+    const matchesMonth = filterMonth === "ALL" || (() => {
+      if (!pDate) return false;
+      const mNum = parseInt(filterMonth, 10);
+      const mNames = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+      const mShort = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+      return pDate.includes("-" + filterMonth + "-") || pDate.includes(mNames[mNum - 1]) || pDate.includes(mShort[mNum - 1]);
+    })();
+    if (!matchesYear || !matchesMonth) return false;
     if (!includeMovies && group.mediaType === 'movie') return false;
     if (!includeTV && group.mediaType === 'tv') return false;
 
@@ -776,7 +787,7 @@ export default function Home() {
     <div>
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.22</span>
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.28</span>
       </div>
       <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
     </div>
@@ -819,7 +830,7 @@ export default function Home() {
   </div>
 </header>
 
-        {/* FIND FILM PEOPLE <span className="text-[10px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming releases)</span> - Single Top Search Bar */}
+        {/* FIND FILM PEOPLE <span className="text-[10px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming releases)</span> <span className="text-[10px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming releases)</span> - Single Top Search Bar */}
         <section className="bg-[#161b22] border border-[#30363d] rounded-lg p-3.5 space-y-2 mb-3">
           <div className="flex justify-between items-center text-[10px] uppercase font-extrabold tracking-wider">
             <span className="text-white font-bold">FIND FILM PEOPLE</span>
