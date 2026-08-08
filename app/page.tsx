@@ -56,7 +56,7 @@ export default function Home() {
 
   // Email Digest & Reminders
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
-  const [mobileTab, setMobileTab] = useState<"feed" | "people">("feed");
+  const [activeTab, setActiveTab] = useState<"feed" | "people">("feed");
   const [emailFrequency, setEmailFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'none'>('weekly');
   const [activeReminders, setActiveReminders] = useState<number[]>([]);
 
@@ -906,7 +906,7 @@ export default function Home() {
               )}
             </section>
 
-            <section className={`bg-[#161b22] border border-[#30363d] p-3 space-y-2 ${mobileTab === "feed" ? "hidden md:block" : "block"}`}>
+            <section className={`bg-[#161b22] border border-[#30363d] p-3 space-y-2 ${activeTab === "feed" ? "hidden md:block" : "block"}`}>
               <div className="border-b border-[#30363d] pb-1.5 flex justify-between items-center">
                 <h2 className="font-bold text-white uppercase text-xs tracking-wide">
                   People You Follow <span className="text-[#8b949e]">[{followed.length}]</span>
@@ -948,7 +948,7 @@ export default function Home() {
             </section>
           </div>
 
-          <div className={`md:col-span-2 ${mobileTab === "people" ? "hidden md:block" : "block"}`}>
+          <div className={`md:col-span-2 ${activeTab === "people" ? "hidden md:block" : "block"}`}>
             <div className="w-full bg-[#161c23] border border-[#2d3542]">
               <div className="bg-[#414853] px-3 py-2 text-white font-bold text-sm tracking-wide flex justify-between items-center">
                 <span>Upcoming Projects Timeline</span>
