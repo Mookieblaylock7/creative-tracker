@@ -804,7 +804,7 @@ export default function Home() {
     <div>
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.38</span>
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.39</span>
       </div>
       <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
     </div>
@@ -1072,6 +1072,7 @@ export default function Home() {
               className="bg-[#0d1117] border border-[#30363d] text-white text-[11px] rounded px-2 py-1 outline-none focus:border-[#58a6ff]"
             >
               <option value="ALL">All Years</option>
+            <option value="IN_DEV">In Development / TBD</option>
               <option value="2026">2026</option>
               <option value="2027">2027</option>
               <option value="2028">2028</option>
