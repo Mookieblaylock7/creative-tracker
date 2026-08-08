@@ -285,8 +285,8 @@ export default function Home() {
     await supabase.auth.signOut();
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!query.trim()) return;
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
@@ -708,7 +708,7 @@ export default function Home() {
   if (!session) {
     return (
       <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs flex items-center justify-center p-4">
-        <div className="w-full max-w-sm bg-[#161b22] border border-[#30363d] p-6 space-y-4">
+        <div className="w-full max-w-sm bg-[#161b22] border border-[#30363d] p-6 space-y-4 rounded-lg">
           <div className="text-center space-y-1">
             <h1 className="text-xl font-bold text-white tracking-wider uppercase">MY FILM PEOPLE</h1>
             <p className="text-[#8b949e] text-[11px]">Track upcoming projects from your favorite creators</p>
@@ -722,7 +722,7 @@ export default function Home() {
                 required
                 value={authEmail}
                 onChange={(e) => setAuthEmail(e.target.value)}
-                className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2.5 py-1.5 focus:outline-none focus:border-[#58a6ff] text-xs"
+                className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2.5 py-1.5 focus:outline-none focus:border-[#58a6ff] text-xs rounded"
               />
             </div>
             <div>
@@ -732,43 +732,18 @@ export default function Home() {
                 required
                 value={authPassword}
                 onChange={(e) => setAuthPassword(e.target.value)}
-                className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2.5 py-1.5 focus:outline-none focus:border-[#58a6ff] text-xs"
+                className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2.5 py-1.5 focus:outline-none focus:border-[#58a6ff] text-xs rounded"
               />
             </div>
 
             {authMessage && <div className="text-amber-400 text-[11px] font-bold">{authMessage}</div>}
 
             <button
-              type="button"
-              onClick={async () => {
-                const shareData = {
-                  title: "My Film People",
-                  text: "Track upcoming movies, TV shows, and docs from your favorite film industry creatives!",
-                  url: "https://myfilmpeople.app"
-                };
-                if (navigator.share) {
-                  try { await navigator.share(shareData); } catch (err) {}
-                } else {
-                  await navigator.clipboard.writeText("https://myfilmpeople.app");
-                  setCopiedShare(true);
-                  setTimeout(() => setCopiedShare(false), 2000);
-                }
-              }}
-              className="px-2.5 py-1.5 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-white text-[10px] uppercase font-bold rounded flex items-center gap-1.5 transition-colors"
+              type="submit"
+              className="w-full bg-[#1f6beb] hover:bg-[#388bfd] text-white font-semibold text-xs px-4 py-2 rounded transition-colors flex items-center justify-center h-[38px]"
             >
-              {copiedShare ? (
-                <>
-                  <Check className="w-3 h-3 text-green-400" />
-                  <span className="text-green-400">Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Share2 className="w-3 h-3 text-[#58a6ff]" />
-                  <span>Share</span>
-                </>
-              )}
+              {authMode === 'login' ? 'Sign In' : 'Create Account'}
             </button>
-            <button type="submit" className="bg-[#1f6beb] hover:bg-[#388bfd] text-white font-semibold text-xs px-6 py-2.5 rounded-r-lg transition-colors flex items-center justify-center min-w-[90px] h-[38px]">Search</button>
           </form>
 
           <div className="text-center pt-2 border-t border-[#30363d]">
@@ -812,72 +787,87 @@ export default function Home() {
     <main className="min-h-screen bg-[#0e1117] text-[#c9d1d9] font-sans text-xs p-4 md:p-8">
       <div className="w-full max-w-5xl mx-auto space-y-6 px-3 sm:px-6 overflow-x-hidden">
         <header className="pb-4 mb-6 border-b border-[#30363d]">
-  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <div>
-      <div className="flex items-center gap-2">
-        <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.67</span>
-      </div>
-      <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
-    </div>
-    
-    <div className="flex items-center gap-3">
-      <button
-        type="button"
-        onClick={async () => {
-          if (navigator.share) {
-            try { await navigator.share({ title: "My Film People", url: "https://myfilmpeople.app" }); } catch (e) {}
-          } else {
-            await navigator.clipboard.writeText("https://myfilmpeople.app");
-            alert("Link copied!");
-          }
-        }}
-        className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#58a6ff] text-[#58a6ff] rounded-xl w-20 h-20 transition-all shadow-sm"
-      >
-        <span className="text-xl mb-1"><svg className="w-4 h-4 text-[#8b949e] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></span>
-        <span className="text-[10px] font-bold uppercase tracking-wider">Share</span>
-      </button>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
+                <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.67</span>
+              </div>
+              <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (navigator.share) {
+                    try { await navigator.share({ title: "My Film People", url: "https://myfilmpeople.app" }); } catch (e) {}
+                  } else {
+                    await navigator.clipboard.writeText("https://myfilmpeople.app");
+                    alert("Link copied!");
+                  }
+                }}
+                className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#58a6ff] text-[#58a6ff] rounded-xl w-20 h-20 transition-all shadow-sm"
+              >
+                <span className="text-xl mb-1">
+                  <svg className="w-4 h-4 text-[#8b949e] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Share</span>
+              </button>
 
-      <button
-        type="button"
-        onClick={() => setIsAlertsModalOpen(true)}
-        className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#d29922] text-[#d29922] rounded-xl w-20 h-20 transition-all shadow-sm"
-      >
-        <span className="text-xl mb-1"><svg className="w-4 h-4 text-[#e3b341] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></span>
-        <span className="text-[10px] font-bold uppercase tracking-wider">Alerts</span>
-      </button>
+              <button
+                type="button"
+                onClick={() => setIsAlertsModalOpen(true)}
+                className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#d29922] text-[#d29922] rounded-xl w-20 h-20 transition-all shadow-sm"
+              >
+                <span className="text-xl mb-1">
+                  <svg className="w-4 h-4 text-[#e3b341] mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                  </svg>
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Alerts</span>
+              </button>
 
-      <button
-        type="button"
-        onClick={() => setIsImportOpen(true)}
-        className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#8b949e] text-[#c9d1d9] rounded-xl w-20 h-20 transition-all shadow-sm"
-      >
-        <span className="text-xl mb-1"><span className="flex items-center gap-0.5 mb-1"><span className="w-2 h-2 rounded-full bg-[#ff8000]"></span><span className="w-2 h-2 rounded-full bg-[#00e054]"></span><span className="w-2 h-2 rounded-full bg-[#40bcf4]"></span></span></span>
-        <span className="text-[9px] font-bold uppercase tracking-wider text-center leading-tight">IMPORT FROM LETTERBOXD</span>
-      </button>
-    </div>
-  </div>
-</header>
+              <button
+                type="button"
+                onClick={() => setIsImportOpen(true)}
+                className="flex flex-col items-center justify-center p-3 bg-[#161b22] border border-[#30363d] hover:border-[#8b949e] text-[#c9d1d9] rounded-xl w-20 h-20 transition-all shadow-sm"
+              >
+                <span className="text-xl mb-1">
+                  <span className="flex items-center gap-0.5 mb-1">
+                    <span className="w-2 h-2 rounded-full bg-[#ff8000]"></span>
+                    <span className="w-2 h-2 rounded-full bg-[#00e054]"></span>
+                    <span className="w-2 h-2 rounded-full bg-[#40bcf4]"></span>
+                  </span>
+                </span>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-center leading-tight">IMPORT FROM LETTERBOXD</span>
+              </button>
+            </div>
+          </div>
+        </header>
 
-        {/* FIND YOUR FILM PEOPLE <span className="text-[11px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming projects)</span> <span className="text-[10px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming releases)</span> <span className="text-[10px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming releases)</span> - Single Top Search Bar */}
+        {/* FIND YOUR FILM PEOPLE - Search Bar with Solid Blue Button */}
         <section className="bg-[#161b22] border border-[#30363d] rounded-lg p-3.5 space-y-2 mb-3">
           <div className="flex justify-between items-center text-[10px] uppercase font-extrabold tracking-wider">
-            <span className="text-white font-bold">FIND YOUR FILM PEOPLE</span><span className="text-[11px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming projects)</span>
-            
+            <span className="text-white font-bold">FIND YOUR FILM PEOPLE</span>
+            <span className="text-[11px] text-[#8b949e] font-normal normal-case ml-2">(Click on a person to view their upcoming projects)</span>
           </div>
-          <form onSubmit={(e) => { e.preventDefault(); handleSearch(e); }} className="flex gap-2">
+          <form onSubmit={handleSearch} className="flex gap-2">
             <input
               type="text"
               placeholder="e.g. Tom Cruise..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="flex-1 bg-[#0d1117] border border-[#30363d] px-3 py-1.5 text-xs text-white rounded focus:outline-none focus:border-[#58a6ff]"
+              className="flex-1 bg-[#0d1117] border border-[#30363d] px-3 py-2 text-xs text-white rounded-lg focus:outline-none focus:border-[#58a6ff]"
             />
             <button
               type="submit"
-              className="px-3 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-white rounded flex items-center justify-center transition-colors"
+              className="px-4 bg-[#1f6beb] hover:bg-[#388bfd] text-white font-semibold rounded-lg flex items-center justify-center transition-colors gap-1.5 text-xs"
             >
               <Search className="w-3.5 h-3.5" />
+              <span>Search</span>
             </button>
           </form>
 
@@ -931,11 +921,7 @@ export default function Home() {
           )}
         </section>
 
-        
-
-        
-
-        {/* Tab Switcher */}
+        {/* Mobile Tab Switcher */}
         <div className="md:hidden flex bg-[#161b22] border border-[#30363d] p-1 rounded-lg my-3">
           <button
             type="button"
@@ -953,63 +939,164 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Filter Toolbar */}
-        <div className="bg-[#161b22] border border-[#30363d] p-3 rounded-lg text-xs">
-          <div className="flex flex-col gap-4 w-full">
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1 mb-1">
-                <Filter className="w-3 h-3 text-[#58a6ff]" /> FILTER YOUR TIMELINE
-              </span>
-              <div className="flex flex-wrap gap-2 mt-2">
-                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-                  <input type="checkbox" checked={showDirecting} onChange={(e) => setShowDirecting(e.target.checked)} className="accent-[#58a6ff]" />
-                  Directing
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-                  <input type="checkbox" checked={showWriting} onChange={(e) => setShowWriting(e.target.checked)} className="accent-[#58a6ff]" />
-                  Writing
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-                  <input type="checkbox" checked={showActing} onChange={(e) => setShowActing(e.target.checked)} className="accent-[#58a6ff]" />
-                  Acting
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-                  <input type="checkbox" checked={showProducing} onChange={(e) => setShowProducing(e.target.checked)} className="accent-[#58a6ff]" />
-                  Producing
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-                  <input type="checkbox" checked={showExecProducing} onChange={(e) => setShowExecProducing(e.target.checked)} className="accent-[#58a6ff]" />
-                  Exec Producing
-                </label>
-              </div>
-            </div>
+        {/* Modern Filter Section - Horizontal Role and Medium Pill/Card Rows */}
+        <div className="bg-[#161b22] border border-[#30363d] p-4 rounded-xl text-xs space-y-4">
+          {/* ROLE Section */}
+          <div>
+            <span className="text-[10px] font-extrabold uppercase text-[#8b949e] flex items-center gap-1.5 tracking-wider mb-2.5">
+              <Filter className="w-3.5 h-3.5 text-[#58a6ff]" /> ROLE
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDirecting(!showDirecting)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                  showDirecting
+                    ? 'bg-[#1c2128] border-[#30363d] text-white'
+                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
+                  showDirecting ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
+                }`}>
+                  {showDirecting && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <span>Directing</span>
+              </button>
 
-            <div className="space-y-1.5 pt-2 border-t border-[#30363d]">
-              <span className="text-[10px] font-bold uppercase text-[#8b949e] block mb-1">
-                MEDIUM
-              </span>
-              <div className="flex flex-wrap gap-2.5 mt-2">
-                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-                  <input type="checkbox" checked={includeMovies} onChange={(e) => setIncludeMovies(e.target.checked)} className="accent-[#58a6ff]" />
-                  Movies
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-                  <input type="checkbox" checked={includeTV} onChange={(e) => setIncludeTV(e.target.checked)} className="accent-[#58a6ff]" />
-                  TV Shows
-                </label>
-                <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
-                  <input type="checkbox" checked={includeDocs} onChange={(e) => setIncludeDocs(e.target.checked)} className="accent-[#58a6ff]" />
-                  Docs
-                </label>
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowWriting(!showWriting)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                  showWriting
+                    ? 'bg-[#1c2128] border-[#30363d] text-white'
+                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
+                  showWriting ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
+                }`}>
+                  {showWriting && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <span>Writing</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowActing(!showActing)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                  showActing
+                    ? 'bg-[#1c2128] border-[#30363d] text-white'
+                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
+                  showActing ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
+                }`}>
+                  {showActing && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <span>Acting</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowProducing(!showProducing)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                  showProducing
+                    ? 'bg-[#1c2128] border-[#30363d] text-white'
+                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
+                  showProducing ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
+                }`}>
+                  {showProducing && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <span>Producing</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowExecProducing(!showExecProducing)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                  showExecProducing
+                    ? 'bg-[#1c2128] border-[#30363d] text-white'
+                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
+                  showExecProducing ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
+                }`}>
+                  {showExecProducing && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <span>Exec Producing</span>
+              </button>
+            </div>
+          </div>
+
+          {/* MEDIUM Section */}
+          <div className="pt-3 border-t border-[#30363d]">
+            <span className="text-[10px] font-extrabold uppercase text-[#8b949e] block tracking-wider mb-2.5">
+              MEDIUM
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setIncludeMovies(!includeMovies)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                  includeMovies
+                    ? 'bg-[#1c2128] border-[#30363d] text-white'
+                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
+                  includeMovies ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
+                }`}>
+                  {includeMovies && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <span>Movies</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIncludeTV(!includeTV)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                  includeTV
+                    ? 'bg-[#1c2128] border-[#30363d] text-white'
+                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
+                  includeTV ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
+                }`}>
+                  {includeTV && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <span>TV Shows</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIncludeDocs(!includeDocs)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                  includeDocs
+                    ? 'bg-[#1c2128] border-[#30363d] text-white'
+                    : 'bg-[#0d1117] border-[#21262d] text-[#8b949e] hover:text-white'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded flex items-center justify-center transition-colors ${
+                  includeDocs ? 'bg-[#1f6beb] text-white' : 'border border-[#30363d] bg-[#0d1117]'
+                }`}>
+                  {includeDocs && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+                <span>Docs</span>
+              </button>
             </div>
           </div>
         </div>
 
-<div className="flex flex-col gap-4 w-full">
+        {/* Main Columns Container */}
+        <div className="flex flex-col gap-4 w-full">
           <div className="space-y-6">
-            
-
             <section className={`bg-[#161b22] border border-[#30363d] p-3 space-y-2 ${activeTab === "feed" ? "hidden md:block" : "block"}`}>
               <div className="border-b border-[#30363d] pb-1.5 flex justify-between items-center">
                 <h2 className="font-bold text-white uppercase text-xs tracking-wide">
@@ -1058,40 +1145,40 @@ export default function Home() {
                 <span>Upcoming Projects Timeline</span>
                 <span className="text-xs text-[#8b949e] font-normal">{sortedGroupedUpdates.length} projects</span>
               
-          <div className="flex items-center gap-2">
-            <select
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value)}
-              className="bg-[#0d1117] border border-[#30363d] text-white text-[11px] rounded px-2 py-1 outline-none focus:border-[#58a6ff]"
-            >
-              <option value="ALL">All Months</option>
-              <option value="01">January</option>
-              <option value="02">February</option>
-              <option value="03">March</option>
-              <option value="04">April</option>
-              <option value="05">May</option>
-              <option value="06">June</option>
-              <option value="07">July</option>
-              <option value="08">August</option>
-              <option value="09">September</option>
-              <option value="10">October</option>
-              <option value="11">November</option>
-              <option value="12">December</option>
-            </select>
-            <select
-              value={filterYear}
-              onChange={(e) => setFilterYear(e.target.value)}
-              className="bg-[#0d1117] border border-[#30363d] text-white text-[11px] rounded px-2 py-1 outline-none focus:border-[#58a6ff]"
-            >
-              <option value="ALL">All Years</option>
-            <option value="IN_DEV">In Development / TBD</option>
-              <option value="2026">2026</option>
-              <option value="2027">2027</option>
-              <option value="2028">2028</option>
-              <option value="2029">2029</option>
-            </select>
-          </div>
-        </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={filterMonth}
+                    onChange={(e) => setFilterMonth(e.target.value)}
+                    className="bg-[#0d1117] border border-[#30363d] text-white text-[11px] rounded px-2 py-1 outline-none focus:border-[#58a6ff]"
+                  >
+                    <option value="ALL">All Months</option>
+                    <option value="01">January</option>
+                    <option value="02">February</option>
+                    <option value="03">March</option>
+                    <option value="04">April</option>
+                    <option value="05">May</option>
+                    <option value="06">June</option>
+                    <option value="07">July</option>
+                    <option value="08">August</option>
+                    <option value="09">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                  </select>
+                  <select
+                    value={filterYear}
+                    onChange={(e) => setFilterYear(e.target.value)}
+                    className="bg-[#0d1117] border border-[#30363d] text-white text-[11px] rounded px-2 py-1 outline-none focus:border-[#58a6ff]"
+                  >
+                    <option value="ALL">All Years</option>
+                    <option value="IN_DEV">In Development / TBD</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                  </select>
+                </div>
+              </div>
 
               <div className="p-3 space-y-6">
                 {loading ? (
@@ -1122,7 +1209,6 @@ export default function Home() {
 
                         <div className="leading-relaxed py-1 flex justify-between items-start">
                           <div>
-                            {/* Unified Single Link for Credit & Movie Title */}
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 w-full">
                               <div>
                                 <a
@@ -1167,7 +1253,6 @@ export default function Home() {
                           </div>
 
                           <div className="flex items-center gap-1.5">
-                            {/* Bell Reminder Toggle */}
                             <button
                               onClick={() => toggleMovieReminder(item)}
                               title={isBellActive ? "Remove Email Reminder" : "Get 1 week & 1 month Email Reminders"}
@@ -1204,7 +1289,7 @@ export default function Home() {
       {/* Email Alerts Preferences Modal */}
       {isAlertsModalOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative">
+          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative rounded-lg">
             <button
               onClick={() => setIsAlertsModalOpen(false)}
               className="absolute top-3 right-3 text-[#8b949e] hover:text-white"
@@ -1225,7 +1310,7 @@ export default function Home() {
                 {(['daily', 'weekly', 'monthly', 'none'] as const).map((freq) => (
                   <label
                     key={freq}
-                    className={`flex items-center justify-between p-2 border cursor-pointer font-bold capitalize text-xs ${
+                    className={`flex items-center justify-between p-2 border cursor-pointer font-bold capitalize text-xs rounded ${
                       emailFrequency === freq
                         ? 'border-[#58a6ff] bg-[#1f242d] text-white'
                         : 'border-[#30363d] bg-[#0d1117] text-[#8b949e] hover:text-white'
@@ -1254,7 +1339,7 @@ export default function Home() {
       {/* Single Person Dedicated View Modal */}
       {selectedPersonModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-xl p-5 space-y-4 relative">
+          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-xl p-5 space-y-4 relative rounded-lg">
             <button
               onClick={() => setSelectedPersonModal(null)}
               className="absolute top-3 right-3 text-[#8b949e] hover:text-white"
@@ -1308,7 +1393,7 @@ export default function Home() {
       {/* Import Modal */}
       {isImportOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative">
+          <div className="bg-[#161b22] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative rounded-lg">
             <button
               onClick={() => setIsImportOpen(false)}
               className="absolute top-3 right-3 text-[#8b949e] hover:text-white"
@@ -1328,7 +1413,7 @@ export default function Home() {
                 <select
                   value={importRatingThreshold}
                   onChange={(e) => setImportRatingThreshold(parseFloat(e.target.value))}
-                  className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2 py-1 text-xs"
+                  className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2 py-1 text-xs rounded"
                 >
                   <option value={5.0}>5 Stars Only</option>
                   <option value={4.5}>4.5 Stars & Above</option>
@@ -1337,7 +1422,7 @@ export default function Home() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[10px] text-[#8b949e] uppercase font-bold">Auto-Follow FILTER YOUR TIMELINE</label>
+                <label className="block text-[10px] text-[#8b949e] uppercase font-bold">Auto-Follow</label>
                 <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
                   <input
                     type="checkbox"
@@ -1394,12 +1479,12 @@ export default function Home() {
                   accept=".csv"
                   disabled={isImporting}
                   onChange={handleFileUpload}
-                  className="w-full text-xs text-[#8b949e] file:bg-[#21262d] file:border file:border-[#30363d] file:text-white file:px-3 file:py-1 file:mr-3 file:font-bold cursor-pointer"
+                  className="w-full text-xs text-[#8b949e] file:bg-[#21262d] file:border file:border-[#30363d] file:text-white file:px-3 file:py-1 file:mr-3 file:font-bold file:rounded cursor-pointer"
                 />
               </div>
 
               {importProgress && (
-                <div className="p-2 bg-[#0d1117] border border-[#30363d] text-[#58a6ff] text-[11px] font-mono">
+                <div className="p-2 bg-[#0d1117] border border-[#30363d] text-[#58a6ff] text-[11px] font-mono rounded">
                   {importProgress}
                 </div>
               )}
