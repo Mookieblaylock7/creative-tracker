@@ -768,12 +768,7 @@ export default function Home() {
                 </>
               )}
             </button>
-            <button
-              type="submit"
-              className="w-full bg-[#238636] hover:bg-[#2ea043] border border-[#30363d] text-white py-1.5 font-bold uppercase transition-colors text-xs"
-            >
-              {authMode === 'login' ? 'Sign In' : 'Create Account'}
-            </button>
+            <button type="submit" className="bg-[#1f6beb] hover:bg-[#388bfd] text-white font-semibold text-xs px-6 py-2.5 rounded-r-lg transition-colors flex items-center justify-center min-w-[90px] h-[38px]">Search</button>
           </form>
 
           <div className="text-center pt-2 border-t border-[#30363d]">
@@ -821,7 +816,7 @@ export default function Home() {
     <div>
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.59</span>
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.60</span>
       </div>
       <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
     </div>
@@ -960,7 +955,7 @@ export default function Home() {
 
         {/* Filter Toolbar */}
         <div className="bg-[#161b22] border border-[#30363d] p-3 rounded-lg text-xs">
-          <div className="flex flex-col sm:flex-row gap-6 w-full">
+          <div className="flex flex-col gap-4 w-full">
             <div className="space-y-1.5">
               <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1 mb-1">
                 <Filter className="w-3 h-3 text-[#58a6ff]" /> FILTER YOUR TIMELINE
@@ -989,11 +984,11 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="space-y-1.5 border-l border-[#30363d] pl-4">
+            <div className="space-y-1.5 pt-2 border-t border-[#30363d]">
               <span className="text-[10px] font-bold uppercase text-[#8b949e] block mb-1">
                 MEDIUM
               </span>
-              <div className="flex flex-col gap-1.5 text-[11px]">
+              <div className="flex flex-wrap gap-2.5 mt-2">
                 <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
                   <input type="checkbox" checked={includeMovies} onChange={(e) => setIncludeMovies(e.target.checked)} className="accent-[#58a6ff]" />
                   Movies
@@ -1342,7 +1337,7 @@ export default function Home() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-[10px] text-[#8b949e] uppercase font-bold">Auto-Follow Roles:</label>
+                <label className="block text-[10px] text-[#8b949e] uppercase font-bold">Auto-Follow FILTER YOUR TIMELINE</label>
                 <label className="flex items-center gap-2 text-xs text-[#c9d1d9] cursor-pointer">
                   <input
                     type="checkbox"
