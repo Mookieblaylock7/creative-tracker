@@ -742,7 +742,7 @@ export default function Home() {
         <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.3</span>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.4</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#8b949e]">
             <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
@@ -774,28 +774,30 @@ export default function Home() {
         </div>
       </header>
 
-        <section className="bg-[#161b22] border border-[#30363d] rounded-lg p-3.5 space-y-2">
-        <div className="flex justify-between items-center text-[10px] uppercase font-bold text-[#8b949e]">
-          <span>Find Film People</span>
-          <span>TMDB</span>
-        </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="e.g. Tom Cruise..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 bg-[#0d1117] border border-[#30363d] px-3 py-1.5 text-xs text-white rounded focus:outline-none focus:border-[#58a6ff]"
-          />
-          <button
-            type="button"
-            onClick={handleSearch}
-            className="px-3 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-white rounded flex items-center justify-center transition-colors"
-          >
-            <Search className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </section>
+        {/* FIND FILM PEOPLE - Single Top Search Bar */}
+        <section className="bg-[#161b22] border border-[#30363d] rounded-lg p-3.5 space-y-2 mb-3">
+          <div className="flex justify-between items-center text-[10px] uppercase font-extrabold tracking-wider">
+            <span className="text-white font-bold">FIND FILM PEOPLE</span>
+            <span className="text-[#8b949e]">TMDB</span>
+          </div>
+          <form onSubmit={(e) => { e.preventDefault(); typeof handleSearch === "function" && handleSearch(e); }} className="flex gap-2">
+            <input
+              type="text"
+              placeholder="e.g. Tom Cruise..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="flex-1 bg-[#0d1117] border border-[#30363d] px-3 py-1.5 text-xs text-white rounded focus:outline-none focus:border-[#58a6ff]"
+            />
+            <button
+              type="submit"
+              className="px-3 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-white rounded flex items-center justify-center transition-colors"
+            >
+              <Search className="w-3.5 h-3.5" />
+            </button>
+          </form>
+        </section>
+
+        
 
         
 
@@ -872,82 +874,7 @@ export default function Home() {
 
 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-6">
-            <section className="bg-[#161b22] border border-[#30363d] p-3 space-y-3">
-              <h2 className="font-bold text-white uppercase text-xs tracking-wide border-b border-[#30363d] pb-1.5 flex justify-between">
-                <span>Find Film People</span>
-                <span className="text-[10px] text-[#8b949e]">TMDB</span>
-              </h2>
-
-              <form onSubmit={handleSearch} className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="e.g. Tom Cruise..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="w-full bg-[#0d1117] border border-[#30363d] text-white px-2 py-1 focus:outline-none focus:border-[#58a6ff] text-xs placeholder:text-[#8b949e]/50"
-                />
-                <button
-                  type="submit"
-                  className="bg-[#21262d] hover:bg-[#30363d] border border-[#30363d] text-white px-3 py-1 font-bold transition-colors"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                </button>
-              </form>
-
-              {searchResults.length > 0 && (
-                <div className="divide-y divide-[#30363d] max-h-64 overflow-y-auto border border-[#30363d] bg-[#0d1117]">
-                  {searchResults.map((person) => {
-                    const isFollowing = followed.some((f) => f.id === person.id);
-                    const photoUrl = person.profile_path
-                      ? `https://image.tmdb.org/t/p/w92${person.profile_path}`
-                      : null;
-
-                    return (
-                      <div key={person.id} className="p-2 flex justify-between items-center hover:bg-[#161b22]">
-                        <div className="flex items-center gap-2.5">
-                          {photoUrl ? (
-                            <img src={photoUrl} alt={person.name} className="w-7 h-9 object-cover rounded border border-[#30363d]" />
-                          ) : (
-                            <div className="w-7 h-9 bg-[#21262d] rounded border border-[#30363d] flex items-center justify-center text-[10px] text-[#8b949e]">
-                              ?
-                            </div>
-                          )}
-                          <div>
-                            <div
-                              onClick={() => setSelectedPersonModal({ id: person.id, name: person.name, department: person.known_for_department || 'Directing' })}
-                              className="font-bold text-[#58a6ff] hover:underline cursor-pointer text-xs"
-                            >
-                              {person.name}
-                            </div>
-                            <div className="text-[10px] text-[#8b949e]">
-                              {person.known_for_department}
-                            </div>
-                          </div>
-                        </div>
-
-                        {isFollowing ? (
-                          <button
-                            onClick={() => unfollowPerson(person.id)}
-                            className="px-2 py-1 flex items-center gap-1 border border-red-900/60 bg-red-950/40 hover:bg-red-900/60 text-red-300 text-[10px] uppercase font-bold transition-colors"
-                          >
-                            <UserMinus className="w-3 h-3 text-red-400" />
-                            Unfollow
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => followPerson(person)}
-                            className="px-2 py-1 flex items-center gap-1 border border-[#30363d] bg-[#21262d] hover:bg-[#30363d] text-white text-[10px] uppercase font-bold transition-colors"
-                          >
-                            <Plus className="w-3 h-3" />
-                            Follow
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
+            
 
             <section className={`bg-[#161b22] border border-[#30363d] p-3 space-y-2 ${activeTab === "feed" ? "hidden md:block" : "block"}`}>
               <div className="border-b border-[#30363d] pb-1.5 flex justify-between items-center">
