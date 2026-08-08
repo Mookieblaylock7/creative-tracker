@@ -714,10 +714,11 @@ export default function Home() {
     ? updates.filter((u) => u.creativeName.toLowerCase() === selectedPersonModal.name.toLowerCase())
     : [];
 
-  const personGroupedMap = new Map<number, { title: string; mediaType: string; status: string; releaseHeader: string; roles: string[] }>();
+  const personGroupedMap = new Map<number, { tmdbId: number; title: string; mediaType: string; status: string; releaseHeader: string; roles: string[] }>();
   personRawProjects.forEach((p) => {
     if (!personGroupedMap.has(p.tmdbId)) {
       personGroupedMap.set(p.tmdbId, {
+        tmdbId: p.tmdbId,
         title: p.projectTitle,
         mediaType: p.mediaType,
         status: p.status,
