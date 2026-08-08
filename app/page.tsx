@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Share2, Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye, Users, Bell, BellOff, Mail, Loader2 } from 'lucide-react';
+import { Share2, Search, Plus, Check, LogOut, User, Upload, Filter, X, Film, Tv, FileText, Trash2, UserMinus, RotateCcw, Eye, Users, Bell, BellOff, Mail, Loader2, Monitor, Smartphone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
 
@@ -63,29 +63,28 @@ export default function Home() {
   const [emailFrequency, setEmailFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'none'>('weekly');
   const [activeReminders, setActiveReminders] = useState<number[]>([]);
 
-  // Details Cache (tmdbId -> { genres, topCast })
+  // Details Cache
   const [detailsCache, setDetailsCache] = useState<Record<number, { genres: string[]; topCast: string[] }>>({});
-
   const [lastImportBatchIds, setLastImportBatchIds] = useState<number[]>([]);
 
-  // Selected Person Dedicated Modal View State
+  // Modal View State
   const [selectedPersonModal, setSelectedPersonModal] = useState<Creative | null>(null);
   const [modalProjects, setModalProjects] = useState<any[]>([]);
   const [isModalLoading, setIsModalLoading] = useState<boolean>(false);
 
-  // Checkbox Role Filters (Left)
+  // Role Filters
   const [showDirecting, setShowDirecting] = useState(true);
   const [showWriting, setShowWriting] = useState(true);
   const [showActing, setShowActing] = useState(true);
   const [showProducing, setShowProducing] = useState(false);
   const [showExecProducing, setShowExecProducing] = useState(false);
 
-  // Media Filters (Right)
+  // Medium Filters
   const [includeDocs, setIncludeDocs] = useState(false);
   const [includeMovies, setIncludeMovies] = useState(true);
   const [includeTV, setIncludeTV] = useState(true);
 
-  // Letterboxd Import Modal States
+  // Import Modal States
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [importRatingThreshold, setImportRatingThreshold] = useState<number>(4.5);
   const [importDirectors, setImportDirectors] = useState(true);
@@ -94,6 +93,7 @@ export default function Home() {
   const [importSkipDocs, setImportSkipDocs] = useState(true);
   const [importProgress, setImportProgress] = useState<string>('');
   const [isImporting, setIsImporting] = useState(false);
+  const [importInstructionsTab, setImportInstructionsTab] = useState<'computer' | 'phone'>('computer');
 
   const getTodayISO = () => {
     const today = new Date();
@@ -104,6 +104,11 @@ export default function Home() {
   };
 
   useEffect(() => {
+    // Auto-detect mobile device on mount to set default tutorial tab
+    if (typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      setImportInstructionsTab('phone');
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
@@ -295,7 +300,6 @@ export default function Home() {
     }
   };
 
-  // Open modal and fetch credits directly from TMDB for anyone (followed or unfollowed)
   const openPersonModal = async (person: Creative) => {
     setSelectedPersonModal(person);
     setIsModalLoading(true);
@@ -681,7 +685,6 @@ export default function Home() {
     });
   }, [sortedGroupedUpdates, detailsCache]);
 
-  // Renders individual credit phrases with clickable name hyperlinks
   const renderCreativePhrase = (name: string, roles: string[], personId: number, department: string, order: string[]) => {
     roles.sort((a, b) => order.indexOf(a) - order.indexOf(b));
     
@@ -1407,7 +1410,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Import Modal */}
+      {/* Import Modal with Device-Tailored Tutorial Instructions */}
       {isImportOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
           <div className="bg-[#12171f] border border-[#30363d] w-full max-w-md p-5 space-y-4 relative rounded-lg">
@@ -1481,7 +1484,52 @@ export default function Home() {
                 </label>
               </div>
 
-              <div className="pt-3">
+              {/* Instructions Box */}
+              <div className="pt-2 border-t border-[#30363d]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] text-[#8b949e] uppercase font-bold">How to export your ratings.csv:</span>
+                  <div className="flex bg-[#0b0e14] p-0.5 rounded border border-[#30363d]">
+                    <button
+                      type="button"
+                      onClick={() => setImportInstructionsTab('computer')}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded flex items-center gap-1 transition-colors ${
+                        importInstructionsTab === 'computer' ? 'bg-[#1f6beb] text-white' : 'text-[#8b949e] hover:text-white'
+                      }`}
+                    >
+                      <Monitor className="w-3 h-3" /> Computer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImportInstructionsTab('phone')}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded flex items-center gap-1 transition-colors ${
+                        importInstructionsTab === 'phone' ? 'bg-[#1f6beb] text-white' : 'text-[#8b949e] hover:text-white'
+                      }`}
+                    >
+                      <Smartphone className="w-3 h-3" /> Phone
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-[#0b0e14] border border-[#30363d] rounded p-3 text-[11px] text-[#c9d1d9]">
+                  {importInstructionsTab === 'computer' ? (
+                    <ol className="list-decimal list-inside space-y-1.5">
+                      <li>Log into <strong className="text-white">Letterboxd</strong>, click your profile name at the top right, and go to <strong className="text-white">Settings</strong>.</li>
+                      <li>Click the <strong className="text-white">Data</strong> tab on the far right.</li>
+                      <li>Click <strong className="text-[#58a6ff]">Export Your Data</strong> to download your zip folder.</li>
+                      <li>Unzip the folder and select <strong className="text-[#58a6ff]">ratings.csv</strong> below.</li>
+                    </ol>
+                  ) : (
+                    <ol className="list-decimal list-inside space-y-1.5">
+                      <li>In your phone browser, open <a href="https://letterboxd.com/user/exportdata" target="_blank" rel="noreferrer" className="text-[#58a6ff] underline font-bold">letterboxd.com/user/exportdata</a> and log in.</li>
+                      <li>Save the downloaded zip file to your phone's <strong className="text-white">Files</strong> app.</li>
+                      <li>Open Files, tap the zip file to extract it, and hold down <strong className="text-[#58a6ff]">ratings.csv</strong> to ensure it's saved locally.</li>
+                      <li>Return here, tap <strong className="text-white">Choose File</strong> below, and select <strong className="text-[#58a6ff]">ratings.csv</strong> from Recents.</li>
+                    </ol>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2">
                 <input
                   type="file"
                   accept=".csv"
