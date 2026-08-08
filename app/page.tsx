@@ -821,7 +821,7 @@ export default function Home() {
     <div>
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-black text-white tracking-tight">MY FILM PEOPLE</h1>
-        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.56</span>
+        <span className="text-[10px] font-mono px-2 py-0.5 bg-[#21262d] border border-[#30363d] text-[#58a6ff] rounded font-bold">V5.59</span>
       </div>
       <p className="text-[#8b949e] text-xs mt-0.5">Track film industry creatives & upcoming releases</p>
     </div>
@@ -963,9 +963,9 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-6 w-full">
             <div className="space-y-1.5">
               <span className="text-[10px] font-bold uppercase text-[#8b949e] flex items-center gap-1 mb-1">
-                <Filter className="w-3 h-3 text-[#58a6ff]" /> Roles:
+                <Filter className="w-3 h-3 text-[#58a6ff]" /> FILTER YOUR TIMELINE
               </span>
-              <div className="flex flex-col gap-1.5 text-[11px]">
+              <div className="flex flex-wrap gap-2 mt-2">
                 <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
                   <input type="checkbox" checked={showDirecting} onChange={(e) => setShowDirecting(e.target.checked)} className="accent-[#58a6ff]" />
                   Directing
@@ -991,7 +991,7 @@ export default function Home() {
 
             <div className="space-y-1.5 border-l border-[#30363d] pl-4">
               <span className="text-[10px] font-bold uppercase text-[#8b949e] block mb-1">
-                Mediums:
+                MEDIUM
               </span>
               <div className="flex flex-col gap-1.5 text-[11px]">
                 <label className="flex items-center gap-1.5 cursor-pointer text-[#c9d1d9]">
