@@ -742,7 +742,7 @@ export default function Home() {
         <div className="flex items-center justify-between w-full">
           <div>
             <h1 className="text-xl font-extrabold text-white tracking-tight">MY FILM PEOPLE</h1>
-            <span className="text-[10px] text-[#58a6ff] font-mono">V5.4</span>
+            <span className="text-[10px] text-[#58a6ff] font-mono">V5.5</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-[#8b949e]">
             <span className="max-w-[130px] sm:max-w-none truncate text-white/90 font-medium">{session?.user?.email}</span>
@@ -780,7 +780,7 @@ export default function Home() {
             <span className="text-white font-bold">FIND FILM PEOPLE</span>
             <span className="text-[#8b949e]">TMDB</span>
           </div>
-          <form onSubmit={(e) => { e.preventDefault(); typeof handleSearch === "function" && handleSearch(e); }} className="flex gap-2">
+          <form onSubmit={(e) => { e.preventDefault(); handleSearch(e); }} className="flex gap-2">
             <input
               type="text"
               placeholder="e.g. Tom Cruise..."
