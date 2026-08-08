@@ -718,7 +718,7 @@ export default function Home() {
   personRawProjects.forEach((p) => {
     if (!personGroupedMap.has(p.tmdbId)) {
       personGroupedMap.set(p.tmdbId, {
-        tmdbId: p.tmdbId || p.id || p.tmdb_id,
+        tmdbId: p.tmdbId,
         title: p.projectTitle,
         mediaType: p.mediaType,
         status: p.status,
@@ -1166,7 +1166,7 @@ export default function Home() {
                     <div>
                       <div className="font-bold text-white text-xs">
                         <a
-                          href={`https://www.themoviedb.org/${proj.mediaType}/${proj.tmdbId || proj.id || proj.tmdb_id}`}
+                          href={`https://www.themoviedb.org/${proj.mediaType}/${proj.tmdbId}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-[#a5d6ff] hover:underline"
